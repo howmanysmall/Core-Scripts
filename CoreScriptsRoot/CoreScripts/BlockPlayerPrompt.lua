@@ -4,6 +4,16 @@
 	// Written by: TheGamer101
 	// Description: Handles prompting the blocking and unblocking of Players.
 ]]--
+local game = game
+local spawn = spawn
+local wait = wait
+local typeof = typeof
+local error = error
+local require = require
+local unpack = unpack
+
+local Color3 = Color3 local RGB = Color3.fromRGB
+local Enum = Enum local ThumbnailSize, ThumbnailType = Enum.ThumbnailSize, Enum.ThumbnailType
 
 local StarterGui = game:GetService("StarterGui")
 local PlayersService = game:GetService("Players")
@@ -12,9 +22,14 @@ local CoreGuiService = game:GetService("CoreGui")
 local RobloxGui = CoreGuiService:WaitForChild("RobloxGui")
 local LocalPlayer = PlayersService.LocalPlayer
 while LocalPlayer == nil do
-	PlayersService.ChildAdded:wait()
+	PlayersService.ChildAdded:Wait()
 	LocalPlayer = PlayersService.LocalPlayer
 end
+
+local BlockText = "Are you sure you want to block %s?"
+local UnblockText = "Are you sure you want to unblock %s?"
+local BlockError = "An error occurred while blocking %s. Please try again later."
+local UnblockError = "An error occurred while unblocking %s. Please try again later."
 
 local CoreGuiModules = RobloxGui:WaitForChild("Modules")
 local PromptCreator = require(CoreGuiModules:WaitForChild("PromptCreator"))
@@ -25,14 +40,14 @@ local BlockingUtility = PlayerDropDownModule:CreateBlockingUtility()
 local THUMBNAIL_URL = "https://www.roblox.com/Thumbs/Avatar.ashx?x=200&y=200&format=png&userId="
 local BUST_THUMBNAIL_URL = "https://www.roblox.com/bust-thumbnail/image?width=420&height=420&format=png&userId="
 
-local REGULAR_THUMBNAIL_IMAGE_SIZE = Enum.ThumbnailSize.Size150x150
-local CONSOLE_THUMBNAIL_IMAGE_SIZE = Enum.ThumbnailSize.Size352x352
+local REGULAR_THUMBNAIL_IMAGE_SIZE = ThumbnailSize.Size150x150
+local CONSOLE_THUMBNAIL_IMAGE_SIZE = ThumbnailSize.Size352x352
 
-local REGULAR_THUMBNAIL_IMAGE_TYPE = Enum.ThumbnailType.HeadShot
-local CONSOLE_THUMBNAIL_IMAGE_TYPE = Enum.ThumbnailType.AvatarThumbnail
+local REGULAR_THUMBNAIL_IMAGE_TYPE = ThumbnailType.HeadShot
+local CONSOLE_THUMBNAIL_IMAGE_TYPE = ThumbnailType.AvatarThumbnail
 
 function createFetchImageFunction(...)
-	local args = {...}
+	local args = { ... }
 	return function(imageLabel)
 		spawn(function()
 			local imageUrl = SocialUtil.GetPlayerImage(unpack(args))
@@ -44,43 +59,39 @@ function createFetchImageFunction(...)
 end
 
 function DoPromptBlockPlayer(playerToBlock)
-	if BlockingUtility:IsPlayerBlockedByUserId(playerToBlock.UserId) then
-		return
-	end
-	
+	if BlockingUtility:IsPlayerBlockedByUserId(playerToBlock.UserId) then return end
 	local function promptCompletedCallback(clickedConfirm)
 		if clickedConfirm then
 			local successfullyBlocked = BlockingUtility:BlockPlayerAsync(playerToBlock)
 			if not successfullyBlocked then
-				while PromptCreator:IsCurrentlyPrompting() do
-					wait()
-				end
-				
+				while PromptCreator:IsCurrentlyPrompting() do wait() end
 				PromptCreator:CreatePrompt({
 					WindowTitle = "Error Blocking Player",
-					MainText = string.format("An error occurred while blocking %s. Please try again later.", playerToBlock.Name),
+					MainText = BlockError:format(playerToBlock.Name),
+					--MainText = string.format("An error occurred while blocking %s. Please try again later.", playerToBlock.Name),
 					ConfirmationText = "Okay",
 					CancelActive = false,
-					Image = BUST_THUMBNAIL_URL ..playerToBlock.UserId,
-					ImageConsoleVR = THUMBNAIL_URL ..playerToBlock.UserId,
+					Image = BUST_THUMBNAIL_URL .. playerToBlock.UserId,
+					ImageConsoleVR = THUMBNAIL_URL .. playerToBlock.UserId,
 					FetchImageFunction = createFetchImageFunction(playerToBlock.UserId, REGULAR_THUMBNAIL_IMAGE_SIZE, REGULAR_THUMBNAIL_IMAGE_TYPE),
 					FetchImageFunctionConsoleVR = createFetchImageFunction(playerToBlock.UserId, CONSOLE_THUMBNAIL_IMAGE_SIZE, CONSOLE_THUMBNAIL_IMAGE_TYPE),
-					StripeColor = Color3.fromRGB(183, 34, 54),
+					StripeColor = RGB(183, 34, 54)
 				})
 			end
 		end
 	end
 	PromptCreator:CreatePrompt({
 		WindowTitle = "Confirm Block",
-		MainText = string.format("Are you sure you want to block %s?", playerToBlock.Name),
+		MainText = BlockText:format(playerToBlock.Name),
+		--MainText = string.format("Are you sure you want to block %s?", playerToBlock.Name),
 		ConfirmationText = "Block",
 		CancelText = "Cancel",
 		CancelActive = true,
-		Image = BUST_THUMBNAIL_URL ..playerToBlock.UserId,
-		ImageConsoleVR = THUMBNAIL_URL ..playerToBlock.UserId,
+		Image = BUST_THUMBNAIL_URL .. playerToBlock.UserId,
+		ImageConsoleVR = THUMBNAIL_URL .. playerToBlock.UserId,
 		FetchImageFunction = createFetchImageFunction(playerToBlock.UserId, REGULAR_THUMBNAIL_IMAGE_SIZE, REGULAR_THUMBNAIL_IMAGE_TYPE),
 		FetchImageFunctionConsoleVR = createFetchImageFunction(playerToBlock.UserId, CONSOLE_THUMBNAIL_IMAGE_SIZE, CONSOLE_THUMBNAIL_IMAGE_TYPE),
-		PromptCompletedCallback = promptCompletedCallback,
+		PromptCompletedCallback = promptCompletedCallback
 	})
 end
 
@@ -105,7 +116,6 @@ function DoPromptUnblockPlayer(playerToUnblock)
 	if not BlockingUtility:IsPlayerBlockedByUserId(playerToUnblock.UserId) and false then
 		return
 	end
-	
 	local function promptCompletedCallback(clickedConfirm)
 		if clickedConfirm then
 			local successfullyUnblocked = BlockingUtility:UnblockPlayerAsync(playerToUnblock)
@@ -115,29 +125,30 @@ function DoPromptUnblockPlayer(playerToUnblock)
 				end
 				PromptCreator:CreatePrompt({
 					WindowTitle = "Error Unblocking Player",
-					MainText = string.format("An error occurred while unblocking %s. Please try again later.", playerToUnblock.Name),
+					MainText = UnblockError:format(playerToUnblock.Name),
+					--MainText = string.format("An error occurred while unblocking %s. Please try again later.", playerToUnblock.Name),
 					ConfirmationText = "Okay",
-					Image = BUST_THUMBNAIL_URL ..playerToUnblock.UserId,
-					ImageConsoleVR = THUMBNAIL_URL ..playerToUnblock.UserId,
+					Image = BUST_THUMBNAIL_URL .. playerToUnblock.UserId,
+					ImageConsoleVR = THUMBNAIL_URL .. playerToUnblock.UserId,
 					FetchImageFunction = createFetchImageFunction(playerToUnblock.UserId, REGULAR_THUMBNAIL_IMAGE_SIZE, REGULAR_THUMBNAIL_IMAGE_TYPE),
 					FetchImageFunctionConsoleVR = createFetchImageFunction(playerToUnblock.UserId, CONSOLE_THUMBNAIL_IMAGE_SIZE, CONSOLE_THUMBNAIL_IMAGE_TYPE),
-					StripeColor = Color3.fromRGB(183, 34, 54),
+					StripeColor = RGB(183, 34, 54)
 				})
 			end
 		end
 	end
-
 	PromptCreator:CreatePrompt({
 		WindowTitle = "Confirm Unblock",
-		MainText = string.format("Would you like to unblock %s?", playerToUnblock.Name),
+		MainText = UnblockText:format(playerToUnblock.Name),
+		--MainText = string.format("Would you like to unblock %s?", playerToUnblock.Name),
 		ConfirmationText = "Unblock",
 		CancelText = "Cancel",
 		CancelActive = true,
-		Image = BUST_THUMBNAIL_URL ..playerToUnblock.UserId,
-		ImageConsoleVR = THUMBNAIL_URL ..playerToUnblock.UserId,
+		Image = BUST_THUMBNAIL_URL .. playerToUnblock.UserId,
+		ImageConsoleVR = THUMBNAIL_URL .. playerToUnblock.UserId,
 		FetchImageFunction = createFetchImageFunction(playerToUnblock.UserId, REGULAR_THUMBNAIL_IMAGE_SIZE, REGULAR_THUMBNAIL_IMAGE_TYPE),
 		FetchImageFunctionConsoleVR = createFetchImageFunction(playerToUnblock.UserId, CONSOLE_THUMBNAIL_IMAGE_SIZE, CONSOLE_THUMBNAIL_IMAGE_TYPE),
-		PromptCompletedCallback = promptCompletedCallback,
+		PromptCompletedCallback = promptCompletedCallback
 	})
 end
 

@@ -4,31 +4,39 @@
 		// Description: Server core script that handles core script server side logic.
 ]]--
 
-local runService = game:GetService('RunService')
+local game = game
+local wait = wait
+local typeof = typeof
+local pcall = pcall
+local type = type
+local require = require
+local Instance = Instance local Instance_new = Instance.new
+
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local Chat = game:GetService("Chat")
+local runService = game:GetService("RunService")
 
 -- Prevent server script from running in Studio when not in run mode
-while not runService:IsRunning() do
-	wait()
-end
-
+while not runService:IsRunning() do wait() end
 --[[ Services ]]--
-local RobloxReplicatedStorage = game:GetService('RobloxReplicatedStorage')
-local ScriptContext = game:GetService('ScriptContext')
+local RobloxReplicatedStorage = game:GetService("RobloxReplicatedStorage")
+local ScriptContext = game:GetService("ScriptContext")
 
 --[[ Add Server CoreScript ]]--
 ScriptContext:AddCoreScriptLocal("ServerCoreScripts/ServerSocialScript", script.Parent)
 
 --[[ Remote Events ]]--
-local RemoteEvent_SetDialogInUse = Instance.new("RemoteEvent")
+local RemoteEvent_SetDialogInUse = Instance_new("RemoteEvent")
 RemoteEvent_SetDialogInUse.Name = "SetDialogInUse"
 RemoteEvent_SetDialogInUse.Parent = RobloxReplicatedStorage
 
-local RemoteFunction_GetServerVersion = Instance.new("RemoteFunction")
+local RemoteFunction_GetServerVersion = Instance_new("RemoteFunction")
 RemoteFunction_GetServerVersion.Name = "GetServerVersion"
 RemoteFunction_GetServerVersion.Parent = RobloxReplicatedStorage
 
 --[[ Event Connections ]]--
-local playerDialogMap = {}
+local playerDialogMap = { }
 
 local dialogInUseFixFlagSuccess, dialogInUseFixValue = pcall(function() return settings():GetFFlag("DialogInUseFix") end)
 local dialogInUseFixFlag = (dialogInUseFixFlagSuccess and dialogInUseFixValue)
@@ -43,29 +51,17 @@ local displayServerVersionSuccess, displayServerVersionValue = pcall(function() 
 local displayServerVersionFlag = (displayServerVersionSuccess and displayServerVersionValue)
 
 local function setDialogInUse(player, dialog, value, waitTime)
-	if typeof(dialog) ~= "Instance" or not dialog:IsA("Dialog") then
-		return
-	end
-	if type(value) ~= "boolean" then
-		return
-	end
-	if type(waitTime) ~= "number" and type(waitTime) ~= "nil" then
-		return
-	end
-	if typeof(player) ~= "Instance" or not player:IsA("Player") then
-		return
-	end
-
-	if waitTime and waitTime ~= 0 then
-		wait(waitTime)
-	end
+	if typeof(dialog) ~= "Instance" or not dialog:IsA("Dialog") then return end
+	if type(value) ~= "boolean" then return end
+	if type(waitTime) ~= "number" and type(waitTime) ~= "nil" then return end
+	if typeof(player) ~= "Instance" or not player:IsA("Player") then return end
+	if waitTime and waitTime ~= 0 then wait(waitTime) end
 	if dialog ~= nil then
 		if dialogMultiplePlayersFlag then
 			dialog:SetPlayerIsUsing(player, value)
 		else
 			dialog.InUse = value
 		end
-
 		if dialogInUseFixFlag then
 			if value == true then
 				playerDialogMap[player] = dialog
@@ -75,7 +71,7 @@ local function setDialogInUse(player, dialog, value, waitTime)
 		end
 	end
 end
-RemoteEvent_SetDialogInUse.OnServerEvent:connect(setDialogInUse)
+RemoteEvent_SetDialogInUse.OnServerEvent:Connect(setDialogInUse)
 
 local function getServerVersion()
 	local rawVersion = runService:GetRobloxVersion()
@@ -94,7 +90,7 @@ end
 
 RemoteFunction_GetServerVersion.OnServerInvoke = displayServerVersionFlag and getServerVersion or function() return "" end
 
-game:GetService("Players").PlayerRemoving:connect(function(player)
+Players.PlayerRemoving:Connect(function(player)
 	if dialogInUseFixFlag then
 		if player then
 			local dialog = playerDialogMap[player]
@@ -110,11 +106,11 @@ game:GetService("Players").PlayerRemoving:connect(function(player)
 	end
 end)
 
-if game:GetService("Chat").LoadDefaultChat then
-	require(game:GetService("CoreGui").RobloxGui.Modules.Server.ClientChat.ChatWindowInstaller)()
-	require(game:GetService("CoreGui").RobloxGui.Modules.Server.ServerChat.ChatServiceInstaller)()
+if Chat.LoadDefaultChat then
+	require(CoreGui.RobloxGui.Modules.Server.ClientChat.ChatWindowInstaller)()
+	require(CoreGui.RobloxGui.Modules.Server.ServerChat.ChatServiceInstaller)()
 end
 
 if freeCameraFlag then
-	require(game:GetService("CoreGui").RobloxGui.Modules.Server.FreeCamera.FreeCameraInstaller)()
+	require(CoreGui.RobloxGui.Modules.Server.FreeCamera.FreeCameraInstaller)()
 end

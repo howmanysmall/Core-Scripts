@@ -1,13 +1,19 @@
 -- Creates all neccessary scripts for the gui on initial load, everything except build tools
 -- Created by Ben T. 10/29/10
 -- Please note that these are loaded in a specific order to diminish errors/perceived load time by user
+local game = game
+local warn = warn
+local spawn = spawn
+local pcall = pcall
+local require = require
+local Instance = Instance local Instance_new = Instance.new
 
 local scriptContext = game:GetService("ScriptContext")
 local touchEnabled = game:GetService("UserInputService").TouchEnabled
 
 local RobloxGui = game:GetService("CoreGui"):WaitForChild("RobloxGui")
 
-local soundFolder = Instance.new("Folder")
+local soundFolder = Instance_new("Folder")
 soundFolder.Name = "Sounds"
 soundFolder.Parent = RobloxGui
 
@@ -16,7 +22,7 @@ local function safeRequire(moduleScript)
 	local moduleReturnValue = nil
 	local success, err = pcall(function() moduleReturnValue = require(moduleScript) end)
 	if not success then
-		warn("Failure to Start CoreScript module" ..moduleScript.Name.. ".\n" ..err)
+		warn("Failure to Start CoreScript module" .. moduleScript.Name .. ".\n" .. err)
 	end
 	return moduleReturnValue
 end
@@ -31,8 +37,7 @@ scriptContext:AddCoreScriptLocal("CoreScripts/MainBotChatScript2", RobloxGui)
 scriptContext:AddCoreScriptLocal("CoreScripts/NotificationScript2", RobloxGui)
 
 -- Performance Stats Management
-scriptContext:AddCoreScriptLocal("CoreScripts/PerformanceStatsManagerScript",
-  RobloxGui)
+scriptContext:AddCoreScriptLocal("CoreScripts/PerformanceStatsManagerScript", RobloxGui)
 
 -- Chat script
 spawn(function() safeRequire(RobloxGui.Modules.ChatSelector) end)
@@ -56,7 +61,6 @@ scriptContext:AddCoreScriptLocal("CoreScripts/GamepadMenuOld", RobloxGui)
 if touchEnabled then -- touch devices don't use same control frame
 	-- only used for touch device button generation
 	scriptContext:AddCoreScriptLocal("CoreScripts/ContextActionTouch", RobloxGui)
-
 	RobloxGui:WaitForChild("ControlFrame")
 	RobloxGui.ControlFrame:WaitForChild("BottomLeftControl")
 	RobloxGui.ControlFrame.BottomLeftControl.Visible = false
@@ -71,7 +75,7 @@ spawn(function()
 		end
 	end
 	onVREnabledChanged()
-	VRService:GetPropertyChangedSignal("VREnabled"):connect(onVREnabledChanged)
+	VRService:GetPropertyChangedSignal("VREnabled"):Connect(onVREnabledChanged)
 end)
 
 -- Boot up the VR App Shell
@@ -88,11 +92,10 @@ if UserSettings().GameSettings:InStudioMode() then
 			end
 		end
 	end
-
 	spawn(function()
 		if VRService.VREnabled then
 			onVREnabledChanged()
 		end
-		VRService:GetPropertyChangedSignal("VREnabled"):connect(onVREnabledChanged)
+		VRService:GetPropertyChangedSignal("VREnabled"):Connect(onVREnabledChanged)
 	end)
 end

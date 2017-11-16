@@ -1,4 +1,5 @@
 -- >= left < mid, >= mid <= right
+local math = math local min = math.min
 function bottomupmerge(comp, a, b, left, mid, right)
     local i, j = left, mid
     for k = left, right do
@@ -13,14 +14,14 @@ function bottomupmerge(comp, a, b, left, mid, right)
 end
 
 function mergesort(arr, comp)
-    local work = {}
+    local work = { }
     for i = 1, #arr do
         work[i] = arr[i]
     end
     local width = 1
     while width < #arr do
-        for i = 1, #arr, 2*width do
-            bottomupmerge(comp, arr, work, i, math.min(i+width, #arr), math.min(i+2*width-1, #arr))
+        for i = 1, #arr, 2 * width do
+            bottomupmerge(comp, arr, work, i, min(i + width, #arr), min(i + 2 * width - 1, #arr))
         end
         local temp = work
         work = arr

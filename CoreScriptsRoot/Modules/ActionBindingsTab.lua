@@ -1,3 +1,22 @@
+local game = game
+local require = require
+local tostring = tostring
+local pairs = pairs
+
+local Color3 = Color3 local Color3_new = Color3.new local RGB = Color3.fromRGB
+local TweenInfo = TweenInfo local TweenInfo_new = TweenInfo.new
+local UDim2 = UDim2 local UDim2_new = UDim2.new
+local UDim = UDim local UDim_new = UDim.new
+local Vector2 = Vector2 local Vector2_new = Vector2.new
+
+local table = table local concat = table.concat
+local Enum = Enum
+	local EasingDirection, EasingStyle = Enum.EasingDirection, Enum.EasingStyle
+	local FillDirection = Enum.FillDirection
+	local SortOrder = Enum.SortOrder
+	local TextXAlignment = Enum.TextXAlignment
+	local Font = Enum.Font
+
 local CoreGui = game:GetService("CoreGui")
 local ContextActionService = game:GetService("ContextActionService")
 local TweenService = game:GetService("TweenService")
@@ -10,24 +29,24 @@ local ACTION_ROW_HEIGHT = 20
 local ROW_PADDING = 5
 local COLUMN_PADDING = 5
 
-local CORE_SECURITY_COLUMN_COLOR = Color3.new(0.1, 0, 0)
-local DEV_SECURITY_COLUMN_COLOR = Color3.new(0, 0, 0)
+local CORE_SECURITY_COLUMN_COLOR = RGB(26, 0, 0)
+local DEV_SECURITY_COLUMN_COLOR = Color3_new(0, 0, 0)
 
-local EXPAND_ROTATE_IMAGE_TWEEN_OUT = TweenInfo.new(0.150, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
-local EXPAND_ROTATE_IMAGE_TWEEN_IN = TweenInfo.new(0.150, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+local EXPAND_ROTATE_IMAGE_TWEEN_OUT = TweenInfo_new(0.150, EasingStyle.Quad, EasingDirection.InOut)
+local EXPAND_ROTATE_IMAGE_TWEEN_IN = TweenInfo_new(0.150, EasingStyle.Quad, EasingDirection.InOut)
 
-local ROW_PULSE = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut, 0, true, 0)
-local CONTAINER_SCROLL = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+local ROW_PULSE = TweenInfo_new(0.5, EasingStyle.Quad, EasingDirection.InOut, 0, true, 0)
+local CONTAINER_SCROLL = TweenInfo_new(0.25, EasingStyle.Quad, EasingDirection.InOut)
 
 local container = nil
-local boundInputTypeRows = {}
-local boundInputTypesByRows = {}
-local boundInputTypeActionRows = {}
-local boundActionInfoByRows = {}
-local inputTypesByActionRows = {}
-local inputTypesByHeaders = {}
-local headersByInputTypes = {}
-local inputTypesExpanded = {}
+local boundInputTypeRows = { }
+local boundInputTypesByRows = { }
+local boundInputTypeActionRows = { }
+local boundActionInfoByRows = { }
+local inputTypesByActionRows = { }
+local inputTypesByHeaders = { }
+local headersByInputTypes = { }
+local inputTypesExpanded = { }
 
 local rowTypePrecedence = { 
 	BoundInputType = 3, 
@@ -93,12 +112,12 @@ local function createEmptyRow(name, height)
 		Name = name,
 		BackgroundTransparency = 1,
 		ZIndex = 6,
-		Size = UDim2.new(1, 0, 0, height or 0)
+		Size = UDim2_new(1, 0, 0, height or 0)
 	}
 	local columnList = Utility:Create("UIListLayout") {
-		FillDirection = Enum.FillDirection.Horizontal,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, COLUMN_PADDING),
+		FillDirection = FillDirection.Horizontal,
+		SortOrder = SortOrder.LayoutOrder,
+		Padding = UDim_new(0, COLUMN_PADDING),
 		Parent = row
 	}
 	return row
@@ -110,12 +129,12 @@ local function createButtonRow(name, height)
 		BackgroundTransparency = 1,
 		ZIndex = 6,
 		Text = "",
-		Size = UDim2.new(1, 0, 0, height or 0),
+		Size = UDim2_new(1, 0, 0, height or 0),
 	}
 	local columnList = Utility:Create("UIListLayout") {
-		FillDirection = Enum.FillDirection.Horizontal,
-		SortOrder = Enum.SortOrder.LayoutOrder,
-		Padding = UDim.new(0, COLUMN_PADDING),
+		FillDirection = FillDirection.Horizontal,
+		SortOrder = SortOrder.LayoutOrder,
+		Padding = UDim_new(0, COLUMN_PADDING),
 		Parent = row
 	}
 	return row
@@ -124,10 +143,10 @@ end
 local function createEmptyColumn(row, columnName)
 	local column = Utility:Create("Frame") {
 		Name = columnName,
-		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundColor3 = Color3_new(0, 0, 0),
 		BackgroundTransparency = 0.75,
 		BorderSizePixel = 0,
-		Size = UDim2.new(1, 0, 1, 0),
+		Size = UDim2_new(1, 0, 1, 0),
 		ZIndex = 6,
 		ClipsDescendants = true,
 		Parent = row
@@ -147,9 +166,9 @@ local function createImageColumn(row, columnName, image, aspectRatio, imageSize)
 	local imageLabel = Utility:Create("ImageLabel") {
 		Name = "ColumnImage",
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(imageSize or 1, 0, imageSize or 1, 0),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2_new(0.5, 0, 0.5, 0),
+		Size = UDim2_new(imageSize or 1, 0, imageSize or 1, 0),
+		AnchorPoint = Vector2_new(0.5, 0.5),
 		ZIndex = 6,
 		Image = image,
 		Parent = column
@@ -164,15 +183,15 @@ local function createTextColumn(row, columnName, text)
 	local textLabel = Utility:Create("TextLabel") {
 		Name = "ColumnText",
 		BackgroundTransparency = 1,
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(1, -10, 1, -10),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2_new(0.5, 0, 0.5, 0),
+		Size = UDim2_new(1, -10, 1, -10),
+		AnchorPoint = Vector2_new(0.5, 0.5),
 		ZIndex = 6,
 		Text = text,
 		TextSize = 18,
-		TextColor3 = Color3.new(1, 1, 1),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Font = Enum.Font.SourceSans,
+		TextColor3 = Color3_new(1, 1, 1),
+		TextXAlignment = TextXAlignment.Left,
+		Font = Font.SourceSans,
 		Parent = column
 	}
 
@@ -186,32 +205,32 @@ local function createActionColumns(row, backgroundColor)
 	local insetCol = createEmptyColumn(row, "Inset")
 	insetCol.LayoutOrder = 0
 	insetCol.BackgroundTransparency = 1
-	insetCol.Size = UDim2.new(0, insetWidth, 1, 0)
+	insetCol.Size = UDim2_new(0, insetWidth, 1, 0)
 	x = x + insetWidth + COLUMN_PADDING
 
 	local priorityWidth = 80
 	local priorityCol = createTextColumn(row, "Priority", "Priority")
 	priorityCol.LayoutOrder = 1
 	priorityCol.BackgroundColor3 = backgroundColor
-	priorityCol.Size = UDim2.new(0, priorityWidth, 1, 0)
+	priorityCol.Size = UDim2_new(0, priorityWidth, 1, 0)
 	x = x + priorityWidth + COLUMN_PADDING
 
 	local securityWidth = 80
 	local securityCol = createTextColumn(row, "Security", "Security")
 	securityCol.LayoutOrder = 2
 	securityCol.BackgroundColor3 = backgroundColor
-	securityCol.Size = UDim2.new(0, securityWidth, 1, 0)
+	securityCol.Size = UDim2_new(0, securityWidth, 1, 0)
 	x = x + securityWidth + COLUMN_PADDING
 
 	local nameCol = createTextColumn(row, "ActionName", "Action Name")
 	nameCol.LayoutOrder = 3
 	nameCol.BackgroundColor3 = backgroundColor
-	nameCol.Size = UDim2.new(1/4, 0, 1, 0)
+	nameCol.Size = UDim2_new(0.25, 0, 1, 0)
 
 	local inputTypesCol = createTextColumn(row, "InputTypes", "Input Types")
 	inputTypesCol.LayoutOrder = 4
 	inputTypesCol.BackgroundColor3 = backgroundColor
-	inputTypesCol.Size = UDim2.new(3/4, -x - COLUMN_PADDING, 1, 0)
+	inputTypesCol.Size = UDim2_new(0.75, -x - COLUMN_PADDING, 1, 0)
 
 	return insetCol, priorityCol, securityCol, nameCol, inputTypesCol
 end
@@ -223,22 +242,22 @@ local function updateContainerCanvas()
 			y = y + v.AbsoluteSize.Y + ROW_PADDING
 		end
 	end
-	container.CanvasSize = UDim2.new(0, 0, 0, y)
+	container.CanvasSize = UDim2_new(0, 0, 0, y)
 end
 
 local function scrollContainerToRow(row)
 	local scrollOffset = row.AbsolutePosition.Y - container.AbsolutePosition.Y
-	local newCanvasPosition = container.CanvasPosition + Vector2.new(0, scrollOffset)
+	local newCanvasPosition = container.CanvasPosition + Vector2_new(0, scrollOffset)
 	TweenService:Create(container, CONTAINER_SCROLL, { CanvasPosition = newCanvasPosition }):Play()
 end
 
-local ActionBindingsTab = {}
+local ActionBindingsTab = { }
 
 function ActionBindingsTab.initializeGui(tabFrame)
 	local scrollingFrame = Utility:Create("ScrollingFrame") {
-		Position = UDim2.new(0.5, 0, 0.5, 0),
-		Size = UDim2.new(1, -10, 1, -10),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2_new(0.5, 0, 0.5, 0),
+		Size = UDim2_new(1, -10, 1, -10),
+		AnchorPoint = Vector2_new(0.5, 0.5),
 		BorderSizePixel = 0,
 		ScrollBarThickness = 4,
 		BackgroundTransparency = 1,
@@ -248,19 +267,19 @@ function ActionBindingsTab.initializeGui(tabFrame)
 	container = scrollingFrame
 
 	local listLayout = Utility:Create("UIListLayout") {
-		Padding = UDim.new(0, ROW_PADDING),
+		Padding = UDim_new(0, ROW_PADDING),
 		Parent = scrollingFrame
 	}
 	listLayout:SetCustomSortFunction(sortActionRows)
-	listLayout.SortOrder = Enum.SortOrder.Custom
+	listLayout.SortOrder = SortOrder.Custom
 
 	ActionBindingsTab.updateGuis()
 
-	ContextActionService.BoundActionAdded:connect(function(actionName, createTouchButton, actionInfo, isCore)
+	ContextActionService.BoundActionAdded:Connect(function(actionName, createTouchButton, actionInfo, isCore)
 		actionInfo.isCore = isCore
 		ActionBindingsTab.updateActionRows(actionName, actionInfo)
 	end)
-	ContextActionService.BoundActionRemoved:connect(function(actionName, actionInfo, isCore)
+	ContextActionService.BoundActionRemoved:Connect(function(actionName, actionInfo, isCore)
 		actionInfo.isCore = isCore
 		ActionBindingsTab.removeActionRows(actionName, actionInfo)
 	end)
@@ -275,16 +294,16 @@ function ActionBindingsTab.updateBoundInputTypeRow(inputType)
 		expandImageCol.ColumnImage.Rotation = -90
 
 		local inputTypeCol = createTextColumn(row, "InputType", tostring(inputType))
-		inputTypeCol.Size = UDim2.new(1, -INPUT_TYPE_ROW_HEIGHT - COLUMN_PADDING, 1, 0)
-		inputTypeCol.ColumnText.Font = Enum.Font.SourceSansBold
+		inputTypeCol.Size = UDim2_new(1, -INPUT_TYPE_ROW_HEIGHT - COLUMN_PADDING, 1, 0)
+		inputTypeCol.ColumnText.Font = Font.SourceSansBold
 
 		local tableHeaderRow = createEmptyRow("TableHeader", ACTION_ROW_HEIGHT)
 		tableHeaderRow.Visible = false
 		local _, priorityCol, securityCol, nameCol, inputTypesCol = createActionColumns(tableHeaderRow, DEV_SECURITY_COLUMN_COLOR)
-		priorityCol.ColumnText.Font = Enum.Font.SourceSansBold
-		securityCol.ColumnText.Font = Enum.Font.SourceSansBold
-		nameCol.ColumnText.Font = Enum.Font.SourceSansBold
-		inputTypesCol.ColumnText.Font = Enum.Font.SourceSansBold
+		priorityCol.ColumnText.Font = Font.SourceSansBold
+		securityCol.ColumnText.Font = Font.SourceSansBold
+		nameCol.ColumnText.Font = Font.SourceSansBold
+		inputTypesCol.ColumnText.Font = Font.SourceSansBold
 
 		boundInputTypeRows[inputType] = row
 		boundInputTypesByRows[row] = inputType
@@ -294,10 +313,10 @@ function ActionBindingsTab.updateBoundInputTypeRow(inputType)
 		tableHeaderRow.Parent = container
 		row.Parent = container
 
-		TweenService:Create(inputTypeCol, ROW_PULSE, { BackgroundColor3 = Color3.new(0.5, 0.5, 0.5) }):Play()
+		TweenService:Create(inputTypeCol, ROW_PULSE, { BackgroundColor3 = RGB(128, 128, 128) }):Play()
 
 		inputTypesExpanded[inputType] = false
-		row.MouseButton1Click:connect(function()
+		row.MouseButton1Click:Connect(function()
 			inputTypesExpanded[inputType] = not inputTypesExpanded[inputType]
 
 			local inputTypeActionRows = boundInputTypeActionRows[inputType]
@@ -321,7 +340,7 @@ function ActionBindingsTab.updateBoundInputTypeRow(inputType)
 
 			updateContainerCanvas()
 			if inputTypesExpanded[inputType] then
-				TweenService:Create(inputTypeCol, ROW_PULSE, { BackgroundColor3 = Color3.new(0.5, 0.5, 0.5) }):Play()
+				TweenService:Create(inputTypeCol, ROW_PULSE, { BackgroundColor3 = RGB(128, 128, 128) }):Play()
 				scrollContainerToRow(row)
 			end
 		end)
@@ -331,7 +350,7 @@ end
 function ActionBindingsTab.updateActionRowForInputType(actionName, actionInfo, inputType)
 	local inputTypeActionRows = boundInputTypeActionRows[inputType]
 	if not inputTypeActionRows then
-		inputTypeActionRows = {}
+		inputTypeActionRows = { }
 		boundInputTypeActionRows[inputType] = inputTypeActionRows
 	end
 
@@ -340,7 +359,7 @@ function ActionBindingsTab.updateActionRowForInputType(actionName, actionInfo, i
 		local row = createEmptyRow("BoundAction", ACTION_ROW_HEIGHT)
 		row.Visible = inputTypesExpanded[inputType]
 
-		local inputTypeNames = {}
+		local inputTypeNames = { }
 		for i, inputType in pairs(actionInfo.inputTypes) do
 			inputTypeNames[i] = tostring(inputType)
 		end
@@ -349,13 +368,13 @@ function ActionBindingsTab.updateActionRowForInputType(actionName, actionInfo, i
 		priorityCol.ColumnText.Text = actionInfo.priorityLevel or "Default"
 		securityCol.ColumnText.Text = actionInfo.isCore and "Core" or "Developer"
 		nameCol.ColumnText.Text = actionName
-		inputTypesCol.ColumnText.Text = table.concat(inputTypeNames, ", ")
+		inputTypesCol.ColumnText.Text = concat(inputTypeNames, ", ")
 
 		if actionInfo.isCore then
-			priorityCol.ColumnText.Font = Enum.Font.SourceSansItalic
-			securityCol.ColumnText.Font = Enum.Font.SourceSansItalic
-			nameCol.ColumnText.Font = Enum.Font.SourceSansItalic
-			inputTypesCol.ColumnText.Font = Enum.Font.SourceSansItalic
+			priorityCol.ColumnText.Font = Font.SourceSansItalic
+			securityCol.ColumnText.Font = Font.SourceSansItalic
+			nameCol.ColumnText.Font = Font.SourceSansItalic
+			inputTypesCol.ColumnText.Font = Font.SourceSansItalic
 		end
 
 		inputTypeActionRows[actionName] = row
@@ -364,11 +383,11 @@ function ActionBindingsTab.updateActionRowForInputType(actionName, actionInfo, i
 		row.Parent = container
 
 		if row.Visible then
-			TweenService:Create(nameCol, ROW_PULSE, { BackgroundColor3 = Color3.new(0.5, 0.5, 0.5) }):Play()
+			TweenService:Create(nameCol, ROW_PULSE, { BackgroundColor3 = RGB(128, 128, 128) }):Play()
 		else
 			local inputTypeRow = boundInputTypeRows[inputType]
 			if inputTypeRow then
-				TweenService:Create(inputTypeRow.InputType, ROW_PULSE, { BackgroundColor3 = Color3.new(0.5, 0.5, 0.5) }):Play()
+				TweenService:Create(inputTypeRow.InputType, ROW_PULSE, { BackgroundColor3 = RGB(128, 128, 128) }):Play()
 			end
 		end
 	end

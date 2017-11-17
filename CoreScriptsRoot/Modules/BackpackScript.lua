@@ -1,14 +1,73 @@
 -- Backpack Version 5.1
 -- OnlyTwentyCharacters, SolarCrane
+local game = game
+local tick = tick
+local wait = wait
+local spawn = spawn
+local delay = delay
+local pcall = pcall
+local require = require
+local pairs, ipairs, next = pairs, ipairs, next
+local tostring = tostring
+
+local Instance = Instance local Instance_new = Instance.new
+local Color3 = Color3 local Color3_new = Color3.new local RGB = Color3.fromRGB
+local UDim2 = UDim2 local UDim2_new = UDim2.new
+local Rect = Rect local Rect_new = Rect.new
+local Vector2 = Vector2 local Vector2_new = Vector2.new
+local CFrame = CFrame local CFrame_new = CFrame.new
+
+local table = table
+	local sort = table.sort
+	local function insert(tbl, index, value)
+		if value ~= nil then
+			if type(index) == "number" then
+				local tlen = #tbl
+				for i = tlen, index do
+					tbl[i + 1] = tbl[i]
+				end
+				tbl[index] = value
+			end
+		else
+			tbl[#tbl + 1] = value
+		end
+	end
+	local function remove(tbl, index)
+		if type(index) == "number" then
+			tbl[index] = nil
+			local tlen = #tbl
+			for i = index + 1, tlen do
+				tbl[i - 1] = tbl[i]
+			end
+			tbl[tlen] = nil
+		end
+	end
+local math = math
+	local min, max = math.min, math.max
+	local huge = math.huge
+	local atan2 = math.atan2
+	local pi = math.pi
+	local floor, ceil = math.floor, math.ceil
+	local clamp = math.clamp
+local Enum = Enum
+	local KeyCode = Enum.KeyCode
+	local UserInputType = Enum.UserInputType
+	local CoreGuiType = Enum.CoreGuiType
+	local Font = Enum.Font
+	local ScaleType = Enum.ScaleType
+	local TextXAlignment, TextYAlignment = Enum.TextXAlignment, Enum.TextYAlignment
+	local UserInputState = Enum.UserInputState
+	local EasingDirection, EasingStyle = Enum.EasingDirection, Enum.EasingStyle
+	local SortOrder = Enum.SortOrder
 
 -------------------
 --| Exposed API |--
 -------------------
 
-local BackpackScript = {}
+local BackpackScript = { }
 BackpackScript.OpenClose = nil -- Function to toggle open/close
 BackpackScript.IsOpen = false
-BackpackScript.StateChanged = Instance.new('BindableEvent') -- Fires after any open/close, passes IsNowOpen
+BackpackScript.StateChanged = Instance_new('BindableEvent') -- Fires after any open/close, passes IsNowOpen
 
 BackpackScript.ModuleName = "Backpack"
 BackpackScript.KeepVRTopbarOpen = true
@@ -20,20 +79,20 @@ BackpackScript.VRClosesNonExclusive = true
 ---------------------
 
 local ICON_SIZE = 60
-local FONT_SIZE = Enum.FontSize.Size14
+local FONT_SIZE = 14
 local ICON_BUFFER = 5
 
-local BACKGROUND_FADE = 0.50
-local BACKGROUND_COLOR = Color3.new(31/255, 31/255, 31/255)
+local BACKGROUND_FADE = 0.5
+local BACKGROUND_COLOR = RGB(31, 31, 31)
 
 local VR_FADE_TIME = 1
 local VR_PANEL_RESOLUTION = 100
 
-local SLOT_DRAGGABLE_COLOR = Color3.new(49/255, 49/255, 49/255)
-local SLOT_EQUIP_COLOR = Color3.new(90/255, 142/255, 233/255)
+local SLOT_DRAGGABLE_COLOR = RGB(49, 49, 49)
+local SLOT_EQUIP_COLOR = RGB(90, 142, 233)
 local SLOT_EQUIP_THICKNESS = 0.1 -- Relative
-local SLOT_FADE_LOCKED = 0.50 -- Locked means undraggable
-local SLOT_BORDER_COLOR = Color3.new(1, 1, 1) -- Appears when dragging
+local SLOT_FADE_LOCKED = 0.5 -- Locked means undraggable
+local SLOT_BORDER_COLOR = Color3_new(1, 1, 1) -- Appears when dragging
 
 local TOOLTIP_BUFFER = 6
 local TOOLTIP_HEIGHT = 16
@@ -41,10 +100,10 @@ local TOOLTIP_OFFSET = -25 -- From top
 
 local ARROW_IMAGE_OPEN = 'rbxasset://textures/ui/Backpack_Open.png'
 local ARROW_IMAGE_CLOSE = 'rbxasset://textures/ui/Backpack_Close.png'
-local ARROW_SIZE = UDim2.new(0, 14, 0, 9)
-local ARROW_HOTKEY = Enum.KeyCode.Backquote.Value --TODO: Hookup '~' too?
+local ARROW_SIZE = UDim2_new(0, 14, 0, 9)
+local ARROW_HOTKEY = KeyCode.Backquote.Value --TODO: Hookup '~' too?
 local ARROW_HOTKEY_STRING = '`'
-local ARROW_HOVER_COLOR = Color3.new(0,162/255,1)
+local ARROW_HOVER_COLOR = RGB(0, 162, 255)
 
 local HOTBAR_SLOTS_FULL = 10
 local HOTBAR_SLOTS_VR = 6
@@ -71,24 +130,23 @@ pcall(function()
 end)
 
 local SEARCH_TEXT_OFFSET_FROMLEFT = 0
-local SEARCH_BACKGROUND_COLOR = Color3.new(0.37, 0.37, 0.37)
+local SEARCH_BACKGROUND_COLOR = RGB(94, 94, 94)
 local SEARCH_BACKGROUND_FADE = 0.15
 
 local DOUBLE_CLICK_TIME = 0.5
 
-local ZERO_KEY_VALUE = Enum.KeyCode.Zero.Value
-local DROP_HOTKEY_VALUE = Enum.KeyCode.Backspace.Value
+local ZERO_KEY_VALUE = KeyCode.Zero.Value
+local DROP_HOTKEY_VALUE = KeyCode.Backspace.Value
 
-local GAMEPAD_INPUT_TYPES =
-{
-	[Enum.UserInputType.Gamepad1] = true;
-	[Enum.UserInputType.Gamepad2] = true;
-	[Enum.UserInputType.Gamepad3] = true;
-	[Enum.UserInputType.Gamepad4] = true;
-	[Enum.UserInputType.Gamepad5] = true;
-	[Enum.UserInputType.Gamepad6] = true;
-	[Enum.UserInputType.Gamepad7] = true;
-	[Enum.UserInputType.Gamepad8] = true;
+local GAMEPAD_INPUT_TYPES = {
+	[UserInputType.Gamepad1] = true,
+	[UserInputType.Gamepad2] = true,
+	[UserInputType.Gamepad3] = true,
+	[UserInputType.Gamepad4] = true,
+	[UserInputType.Gamepad5] = true,
+	[UserInputType.Gamepad6] = true,
+	[UserInputType.Gamepad7] = true,
+	[UserInputType.Gamepad8] = true
 }
 
 -----------------
@@ -109,7 +167,7 @@ local TopbarEnabled = true
 
 if IsTenFootInterface then
 	ICON_SIZE = 100
-	FONT_SIZE = Enum.FontSize.Size24
+	FONT_SIZE = 24
 end
 
 local GamepadActionsBound = false
@@ -134,19 +192,19 @@ local Character = nil
 local Humanoid = nil
 local Backpack = nil
 
-local Slots = {} -- List of all Slots by index
+local Slots = { } -- List of all Slots by index
 local LowestEmptySlot = nil
-local SlotsByTool = {} -- Map of Tools to their assigned Slots
-local HotkeyFns = {} -- Map of KeyCode values to their assigned behaviors
-local Dragging = {} -- Only used to check if anything is being dragged, to disable other input
+local SlotsByTool = { } -- Map of Tools to their assigned Slots
+local HotkeyFns = { } -- Map of KeyCode values to their assigned behaviors
+local Dragging = { } -- Only used to check if anything is being dragged, to disable other input
 local FullHotbarSlots = 0 -- Now being used to also determine whether or not LB and RB on the gamepad are enabled.
 local ActiveHopper = nil -- NOTE: HopperBin
 local StarterToolFound = false -- Special handling is required for the gear currently equipped on the site
 local WholeThingEnabled = false
 local TextBoxFocused = false -- ANY TextBox, not just the search box
 local ViewingSearchResults = false -- If the results of a search are currently being viewed
-local HotkeyStrings = {} -- Used for eating/releasing hotkeys
-local CharConns = {} -- Holds character connections to be cleared later
+local HotkeyStrings = { } -- Used for eating/releasing hotkeys
+local CharConns = { } -- Holds character connections to be cleared later
 local GamepadEnabled = false -- determines if our gui needs to be gamepad friendly
 local TimeOfLastToolChange = 0
 
@@ -162,7 +220,7 @@ local lastEquippedSlot = nil
 -----------------
 
 local function EvaluateBackpackPanelVisibility(enabled)
-	return enabled and StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.Backpack) and TopbarEnabled and VRService.VREnabled
+	return enabled and StarterGui:GetCoreGuiEnabled(CoreGuiType.Backpack) and TopbarEnabled and VRService.VREnabled
 end
 
 local function ShowVRBackpackPopup()
@@ -175,21 +233,21 @@ local function ShowVRBackpackPopup()
 end
 
 local function NewGui(className, objectName)
-	local newGui = Instance.new(className)
+	local newGui = Instance_new(className)
 	newGui.Name = objectName
-	newGui.BackgroundColor3 = Color3.new(0, 0, 0)
+	newGui.BackgroundColor3 = Color3_new(0, 0, 0)
 	newGui.BackgroundTransparency = 1
-	newGui.BorderColor3 = Color3.new(0, 0, 0)
+	newGui.BorderColor3 = Color3_new(0, 0, 0)
 	newGui.BorderSizePixel = 0
-	newGui.Size = UDim2.new(1, 0, 1, 0)
+	newGui.Size = UDim2_new(1, 0, 1, 0)
 	if className:match('Text') then
-		newGui.TextColor3 = Color3.new(1, 1, 1)
+		newGui.TextColor3 = Color3_new(1, 1, 1)
 		newGui.Text = ''
-		newGui.Font = Enum.Font.SourceSans
-		newGui.FontSize = FONT_SIZE
+		newGui.Font = Font.SourceSans
+		newGui.TextSize = FONT_SIZE
 		newGui.TextWrapped = true
 		if className == 'TextButton' then
-			newGui.Font = Enum.Font.SourceSansBold
+			newGui.Font = Font.SourceSansBold
 			newGui.BorderSizePixel = 1
 		end
 	end
@@ -238,14 +296,14 @@ local function AdjustHotbarFrames()
 	end
 
 	OpenInventoryButton.Visible = not inventoryOpen and (hotbarIsVisible or not isInventoryEmpty())
-	OpenInventoryButton.Position = UDim2.new(0.5, -15, 1, hotbarIsVisible and -110 or -50)
+	OpenInventoryButton.Position = UDim2_new(0.5, -15, 1, hotbarIsVisible and -110 or -50)
 end
 
 local function UpdateScrollingFrameCanvasSize()
-	local countX = math.floor(ScrollingFrame.AbsoluteSize.X/(ICON_SIZE + ICON_BUFFER))
-	local maxRow = math.ceil((#UIGridFrame:GetChildren() - 1)/countX)
+	local countX = floor(ScrollingFrame.AbsoluteSize.X / (ICON_SIZE + ICON_BUFFER))
+	local maxRow = ceil((#UIGridFrame:GetChildren() - 1) / countX)
 	local canvasSizeY = maxRow*(ICON_SIZE + ICON_BUFFER) + ICON_BUFFER
-	ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, canvasSizeY)
+	ScrollingFrame.CanvasSize = UDim2_new(0, 0, 0, canvasSizeY)
 end
 
 local function AdjustInventoryFrames()
@@ -258,19 +316,19 @@ local function AdjustInventoryFrames()
 end
 
 local function UpdateBackpackLayout()
-	HotbarFrame.Size = UDim2.new(0, ICON_BUFFER + (NumberOfHotbarSlots * (ICON_SIZE + ICON_BUFFER)), 0, ICON_BUFFER + ICON_SIZE + ICON_BUFFER)
-	HotbarFrame.Position = UDim2.new(0.5, -HotbarFrame.Size.X.Offset / 2, 1, -HotbarFrame.Size.Y.Offset)
-	InventoryFrame.Size = UDim2.new(0, HotbarFrame.Size.X.Offset, 0, (HotbarFrame.Size.Y.Offset * NumberOfInventoryRows) + INVENTORY_HEADER_SIZE + (IsVR and 2*INVENTORY_ARROWS_BUFFER_VR or 0))
-	InventoryFrame.Position = UDim2.new(0.5, -InventoryFrame.Size.X.Offset / 2, 1, HotbarFrame.Position.Y.Offset - InventoryFrame.Size.Y.Offset)
+	HotbarFrame.Size = UDim2_new(0, ICON_BUFFER + (NumberOfHotbarSlots * (ICON_SIZE + ICON_BUFFER)), 0, ICON_BUFFER + ICON_SIZE + ICON_BUFFER)
+	HotbarFrame.Position = UDim2_new(0.5, -HotbarFrame.Size.X.Offset * 0.5, 1, -HotbarFrame.Size.Y.Offset)
+	InventoryFrame.Size = UDim2_new(0, HotbarFrame.Size.X.Offset, 0, (HotbarFrame.Size.Y.Offset * NumberOfInventoryRows) + INVENTORY_HEADER_SIZE + (IsVR and 2 * INVENTORY_ARROWS_BUFFER_VR or 0))
+	InventoryFrame.Position = UDim2_new(0.5, -InventoryFrame.Size.X.Offset * 0.5, 1, HotbarFrame.Position.Y.Offset - InventoryFrame.Size.Y.Offset)
 
-	ScrollingFrame.Size = UDim2.new(1, ScrollingFrame.ScrollBarThickness + 1, 1, -INVENTORY_HEADER_SIZE - (IsVR and 2*INVENTORY_ARROWS_BUFFER_VR or 0))
-	ScrollingFrame.Position = UDim2.new(0, 0, 0, INVENTORY_HEADER_SIZE + (IsVR and INVENTORY_ARROWS_BUFFER_VR or 0))
+	ScrollingFrame.Size = UDim2_new(1, ScrollingFrame.ScrollBarThickness + 1, 1, -INVENTORY_HEADER_SIZE - (IsVR and 2 * INVENTORY_ARROWS_BUFFER_VR or 0))
+	ScrollingFrame.Position = UDim2_new(0, 0, 0, INVENTORY_HEADER_SIZE + (IsVR and INVENTORY_ARROWS_BUFFER_VR or 0))
 	AdjustHotbarFrames()
 	AdjustInventoryFrames()
 end
 
 local function Clamp(low, high, num)
-	return math.min(high, math.max(low, num))
+	return min(high, max(low, num))
 end
 
 local function CheckBounds(guiObject, x, y)
@@ -280,7 +338,7 @@ local function CheckBounds(guiObject, x, y)
 end
 
 local function GetOffset(guiObject, point)
-	local centerPoint = guiObject.AbsolutePosition + (guiObject.AbsoluteSize / 2)
+	local centerPoint = guiObject.AbsolutePosition + (guiObject.AbsoluteSize * 0.5)
 	return (centerPoint - point).magnitude
 end
 
@@ -320,7 +378,7 @@ local function MakeSlot(parent, index)
 
 	-- Slot Definition --
 
-	local slot = {}
+	local slot = { }
 	slot.Tool = nil
 	slot.Index = index
 	slot.Frame = nil
@@ -368,11 +426,11 @@ local function MakeSlot(parent, index)
 	end
 
 	function slot:Readjust(visualIndex, visualTotal) --NOTE: Only used for Hotbar slots
-		local centered = HotbarFrame.Size.X.Offset / 2
+		local centered = HotbarFrame.Size.X.Offset * 0.5
 		local sizePlus = ICON_BUFFER + ICON_SIZE
-		local midpointish = (visualTotal / 2) + 0.5
+		local midpointish = (visualTotal * 0.5) + 0.5
 		local factor = visualIndex - midpointish
-		SlotFrame.Position = UDim2.new(0, centered - (ICON_SIZE / 2) + (sizePlus * factor), 0, ICON_BUFFER)
+		SlotFrame.Position = UDim2_new(0, centered - (ICON_SIZE * 0.5) + (sizePlus * factor), 0, ICON_BUFFER)
 	end
 
 	function slot:Fill(tool)
@@ -389,18 +447,18 @@ local function MakeSlot(parent, index)
 			if ToolTip and tool:IsA('Tool') then --NOTE: HopperBin
 				ToolTip.Text = tool.ToolTip
 				local width = ToolTip.TextBounds.X + TOOLTIP_BUFFER
-				ToolTip.Size = UDim2.new(0, width, 0, TOOLTIP_HEIGHT)
-				ToolTip.Position = UDim2.new(0.5, -width / 2, 0, TOOLTIP_OFFSET)
+				ToolTip.Size = UDim2_new(0, width, 0, TOOLTIP_HEIGHT)
+				ToolTip.Position = UDim2_new(0.5, -width * 0.5, 0, TOOLTIP_OFFSET)
 			end
 		end
 		assignToolData()
 
 		if ToolChangeConn then
-			ToolChangeConn:disconnect()
+			ToolChangeConn:Disconnect()
 			ToolChangeConn = nil
 		end
 
-		ToolChangeConn = tool.Changed:connect(function(property)
+		ToolChangeConn = tool.Changed:Connect(function(property)
 			if property == 'TextureId' or property == 'Name' or property == 'ToolTip' then
 				assignToolData()
 			end
@@ -422,7 +480,7 @@ local function MakeSlot(parent, index)
 				if FullHotbarSlots >= 1 and not GamepadActionsBound then
 					-- Player added first item to a hotbar slot, enable BindCoreAction
 					GamepadActionsBound = true
-					ContextActionService:BindCoreAction("RBXHotbarEquip", changeToolFunc, false, Enum.KeyCode.ButtonL1, Enum.KeyCode.ButtonR1)
+					ContextActionService:BindCoreAction("RBXHotbarEquip", changeToolFunc, false, KeyCode.ButtonL1, KeyCode.ButtonR1)
 				end
 			end
 		end
@@ -435,7 +493,7 @@ local function MakeSlot(parent, index)
 		if not self.Tool then return end
 
 		if ToolChangeConn then
-			ToolChangeConn:disconnect()
+			ToolChangeConn:Disconnect()
 			ToolChangeConn = nil
 		end
 
@@ -471,17 +529,17 @@ local function MakeSlot(parent, index)
 				HighlightFrame.ZIndex = SlotFrame.ZIndex
 				local t = SLOT_EQUIP_THICKNESS
 				local dataTable = { -- Relative sizes and positions
-					{t,       1, 0,     0},
-					{1 - 2*t, t, t,     0},
-					{t,       1, 1 - t, 0},
-					{1 - 2*t, t, t,     1 - t},
+					{ t, 1, 0, 0 },
+					{ 1 - 2 * t, t, t, 0 },
+					{ t, 1, 1 - t, 0 },
+					{ 1 - 2 * t, t, t, 1 - t }
 				}
 				for _, data in pairs(dataTable) do
 					local edgeFrame = NewGui('Frame', 'Edge')
 					edgeFrame.BackgroundTransparency = 0
 					edgeFrame.BackgroundColor3 = SLOT_EQUIP_COLOR
-					edgeFrame.Size = UDim2.new(data[1], 0, data[2], 0)
-					edgeFrame.Position = UDim2.new(data[3], 0, data[4], 0)
+					edgeFrame.Size = UDim2_new(data[1], 0, data[2], 0)
+					edgeFrame.Position = UDim2_new(data[3], 0, data[4], 0)
 					edgeFrame.ZIndex = HighlightFrame.ZIndex
 					edgeFrame.Parent = HighlightFrame
 				end
@@ -501,7 +559,7 @@ local function MakeSlot(parent, index)
 
 	function slot:Delete()
 		SlotFrame:Destroy() --NOTE: Also clears connections
-		table.remove(Slots, self.Index)
+		remove(Slots, self.Index)
 		local newSize = #Slots
 
 		-- Now adjust the rest (both visually and representationally)
@@ -587,35 +645,32 @@ local function MakeSlot(parent, index)
 	SlotFrame.Text = ""
 	SlotFrame.AutoButtonColor = false
 	SlotFrame.BorderSizePixel = 0
-	SlotFrame.Size = UDim2.new(0, ICON_SIZE, 0, ICON_SIZE)
+	SlotFrame.Size = UDim2_new(0, ICON_SIZE, 0, ICON_SIZE)
 	SlotFrame.Active = true
 	SlotFrame.Draggable = false
 	SlotFrame.BackgroundTransparency = SLOT_FADE_LOCKED
-	SlotFrame.MouseButton1Click:connect(function() changeSlot(slot) end)
-	slot.Frame = SlotFrame
-
-	do
+	SlotFrame.MouseButton1Click:Connect(function() changeSlot(slot) end)
+	slot.Frame = SlotFrame do
 		local selectionObjectClipper = NewGui('Frame', 'SelectionObjectClipper')
 		selectionObjectClipper.Visible = false
 		selectionObjectClipper.Parent = SlotFrame
-
 		SelectionObj = NewGui('ImageLabel', 'Selector')
-		SelectionObj.Size = UDim2.new(1, 0, 1, 0)
+		SelectionObj.Size = UDim2_new(1, 0, 1, 0)
 		SelectionObj.Image = "rbxasset://textures/ui/Keyboard/key_selection_9slice.png"
-		SelectionObj.ScaleType = Enum.ScaleType.Slice
-		SelectionObj.SliceCenter = Rect.new(12,12,52,52)
+		SelectionObj.ScaleType = ScaleType.Slice
+		SelectionObj.SliceCenter = Rect_new(12, 12, 52, 52)
 		SelectionObj.Parent = selectionObjectClipper
 	end
 
 
 	ToolIcon = NewGui('ImageLabel', 'Icon')
-	ToolIcon.Size = UDim2.new(0.8, 0, 0.8, 0)
-	ToolIcon.Position = UDim2.new(0.1, 0, 0.1, 0)
+	ToolIcon.Size = UDim2_new(0.8, 0, 0.8, 0)
+	ToolIcon.Position = UDim2_new(0.1, 0, 0.1, 0)
 	ToolIcon.Parent = SlotFrame
 
 	ToolName = NewGui('TextLabel', 'ToolName')
-	ToolName.Size = UDim2.new(1, -2, 1, -2)
-	ToolName.Position = UDim2.new(0, 1, 0, 1)
+	ToolName.Size = UDim2_new(1, -2, 1, -2)
+	ToolName.Position = UDim2_new(0, 1, 0, 1)
 	ToolName.Parent = SlotFrame
 
 	slot.Frame.LayoutOrder = slot.Index
@@ -624,17 +679,17 @@ local function MakeSlot(parent, index)
 		-- ToolTip stuff
 		ToolTip = NewGui('TextLabel', 'ToolTip')
 		ToolTip.TextWrapped = false
-		ToolTip.TextYAlignment = Enum.TextYAlignment.Top
-		ToolTip.BackgroundColor3 = Color3.new(0.4, 0.4, 0.4)
+		ToolTip.TextYAlignment = TextYAlignment.Top
+		ToolTip.BackgroundColor3 = RGB(102, 102, 102)
 		ToolTip.BackgroundTransparency = 0
 		ToolTip.Visible = false
 		ToolTip.Parent = SlotFrame
-		SlotFrame.MouseEnter:connect(function()
+		SlotFrame.MouseEnter:Connect(function()
 			if ToolTip.Text ~= '' then
 				ToolTip.Visible = true
 			end
 		end)
-		SlotFrame.MouseLeave:connect(function() ToolTip.Visible = false end)
+		SlotFrame.MouseLeave:Connect(function() ToolTip.Visible = false end)
 
 		function slot:MoveToInventory()
 			if slot.Index <= NumberOfHotbarSlots then -- From a Hotbar slot
@@ -658,19 +713,17 @@ local function MakeSlot(parent, index)
 			local slotNum = (index < 10) and index or 0
 			SlotNumber = NewGui('TextLabel', 'Number')
 			SlotNumber.Text = slotNum
-			SlotNumber.Size = UDim2.new(0.15, 0, 0.15, 0)
+			SlotNumber.Size = UDim2_new(0.15, 0, 0.15, 0)
 			SlotNumber.Visible = false
 			SlotNumber.Parent = SlotFrame
 			HotkeyFns[ZERO_KEY_VALUE + slotNum] = slot.Select
 		end
-	end
-
-	do -- Dragging Logic
+	end do -- Dragging Logic
 		local startPoint = SlotFrame.Position
 		local lastUpTime = 0
 		local startParent = nil
 
-		SlotFrame.DragBegin:connect(function(dragPoint)
+		SlotFrame.DragBegin:Connect(function(dragPoint)
 			Dragging[SlotFrame] = true
 			startPoint = dragPoint
 
@@ -694,7 +747,7 @@ local function MakeSlot(parent, index)
 			startParent = SlotFrame.Parent
 			if startParent == UIGridFrame then
 				local oldAbsolutPos = SlotFrame.AbsolutePosition
-				local newPosition = UDim2.new(0, SlotFrame.AbsolutePosition.X - InventoryFrame.AbsolutePosition.X, 0, SlotFrame.AbsolutePosition.Y - InventoryFrame.AbsolutePosition.Y)
+				local newPosition = UDim2_new(0, SlotFrame.AbsolutePosition.X - InventoryFrame.AbsolutePosition.X, 0, SlotFrame.AbsolutePosition.Y - InventoryFrame.AbsolutePosition.Y)
 				SlotFrame.Parent = InventoryFrame
 				SlotFrame.Position = newPosition
 
@@ -706,7 +759,7 @@ local function MakeSlot(parent, index)
 			end
 		end)
 
-		SlotFrame.DragStopped:connect(function(x, y)
+		SlotFrame.DragStopped:Connect(function(x, y)
 			if FakeSlotFrame then
 				FakeSlotFrame:Destroy()
 			end
@@ -754,12 +807,12 @@ local function MakeSlot(parent, index)
 					now = 0 -- Resets the timer
 				end
 			elseif CheckBounds(HotbarFrame, x, y) then
-				local closest = {math.huge, nil}
+				local closest = { huge, nil }
 				for i = 1, NumberOfHotbarSlots do
 					local otherSlot = Slots[i]
-					local offset = GetOffset(otherSlot.Frame, Vector2.new(x, y))
+					local offset = GetOffset(otherSlot.Frame, Vector2_new(x, y))
 					if offset < closest[1] then
-						closest = {offset, otherSlot}
+						closest = { offset, otherSlot }
 					end
 				end
 				local closestSlot = closest[2]
@@ -805,7 +858,7 @@ local function MakeSlot(parent, index)
 		-- Scroll to new inventory slot, if we're open and not viewing search results
 		if InventoryFrame.Visible and not ViewingSearchResults then
 			local offset = ScrollingFrame.CanvasSize.Y.Offset - ScrollingFrame.AbsoluteSize.Y
-			ScrollingFrame.CanvasPosition = Vector2.new(0, math.max(0, offset))
+			ScrollingFrame.CanvasPosition = Vector2_new(0, max(0, offset))
 		end
 	end
 
@@ -918,7 +971,7 @@ local function OnChildAdded(child) -- To Character or Backpack
 					end
 				end
 				AdjustHotbarFrames()
-				return -- We're done here
+				return -- We are done here
 			end
 		end
 	end
@@ -951,7 +1004,7 @@ local function OnChildRemoved(child) -- From Character or Backpack
 	ShowVRBackpackPopup()
 	TimeOfLastToolChange = tick()
 
-	-- Ignore this event if we're just moving between the two
+	-- Ignore this event if we are just moving between the two
 	local newParent = tool.Parent
 	if newParent == Character or newParent == Backpack then
 		return
@@ -987,14 +1040,14 @@ local function OnCharacterAdded(character)
 
 	-- And any old connections
 	for _, conn in pairs(CharConns) do
-		conn:disconnect()
+		conn:Disconnect()
 	end
-	CharConns = {}
+	CharConns = { }
 
 	-- Hook up the new character
 	Character = character
-	table.insert(CharConns, character.ChildRemoved:connect(OnChildRemoved))
-	table.insert(CharConns, character.ChildAdded:connect(OnChildAdded))
+	insert(CharConns, character.ChildRemoved:Connect(OnChildRemoved))
+	insert(CharConns, character.ChildAdded:Connect(OnChildAdded))
 	for _, child in pairs(character:GetChildren()) do
 		OnChildAdded(child)
 	end
@@ -1002,18 +1055,15 @@ local function OnCharacterAdded(character)
 
 	-- And the new backpack, when it gets here
 	Backpack = Player:WaitForChild('Backpack')
-	table.insert(CharConns, Backpack.ChildRemoved:connect(OnChildRemoved))
-	table.insert(CharConns, Backpack.ChildAdded:connect(OnChildAdded))
-	for _, child in pairs(Backpack:GetChildren()) do
-		OnChildAdded(child)
-	end
-
+	insert(CharConns, Backpack.ChildRemoved:Connect(OnChildRemoved))
+	insert(CharConns, Backpack.ChildAdded:Connect(OnChildAdded))
+	for _, child in pairs(Backpack:GetChildren()) do OnChildAdded(child) end
 	AdjustHotbarFrames()
 end
 
 local function OnInputBegan(input, isProcessed)
 	-- Pass through keyboard hotkeys when not typing into a TextBox and not disabled (except for the Drop key)
-	if input.UserInputType == Enum.UserInputType.Keyboard and not TextBoxFocused and (WholeThingEnabled or input.KeyCode.Value == DROP_HOTKEY_VALUE) then
+	if input.UserInputType == UserInputType.Keyboard and not TextBoxFocused and (WholeThingEnabled or input.KeyCode.Value == DROP_HOTKEY_VALUE) then
 		local hotkeyBehavior = HotkeyFns[input.KeyCode.Value]
 		if hotkeyBehavior then
 			hotkeyBehavior(isProcessed)
@@ -1037,7 +1087,7 @@ local lastChangeToolInputObject = nil
 local lastChangeToolInputTime = nil
 local maxEquipDeltaTime = 0.06
 local noOpFunc = function() end
-local selectDirection = Vector2.new(0,0)
+local selectDirection = Vector2_new(0, 0)
 local hotbarVisible = false
 
 function unbindAllGamepadEquipActions()
@@ -1056,30 +1106,30 @@ end
 
 local function getInputDirection(inputObject)
 	local buttonModifier = 1
-	if inputObject.UserInputState == Enum.UserInputState.End then
+	if inputObject.UserInputState == UserInputState.End then
 		buttonModifier = -1
 	end
 
-	if inputObject.KeyCode == Enum.KeyCode.Thumbstick1 then
+	if inputObject.KeyCode == KeyCode.Thumbstick1 then
 
 		local magnitude = inputObject.Position.magnitude
 
 		if magnitude > 0.98 then
-			local normalizedVector = Vector2.new(inputObject.Position.x / magnitude, -inputObject.Position.y / magnitude)
+			local normalizedVector = Vector2_new(inputObject.Position.x / magnitude, -inputObject.Position.y / magnitude)
 			selectDirection =  normalizedVector
 		else
-			selectDirection = Vector2.new(0,0)
+			selectDirection = Vector2_new(0, 0)
 		end
-	elseif inputObject.KeyCode == Enum.KeyCode.DPadLeft then
-		selectDirection = Vector2.new(selectDirection.x - 1 * buttonModifier, selectDirection.y)
-	elseif inputObject.KeyCode == Enum.KeyCode.DPadRight then
-		selectDirection = Vector2.new(selectDirection.x + 1 * buttonModifier, selectDirection.y)
-	elseif inputObject.KeyCode == Enum.KeyCode.DPadUp then
-		selectDirection = Vector2.new(selectDirection.x, selectDirection.y - 1 * buttonModifier)
-	elseif inputObject.KeyCode == Enum.KeyCode.DPadDown then
-		selectDirection = Vector2.new(selectDirection.x, selectDirection.y + 1 * buttonModifier)
+	elseif inputObject.KeyCode == KeyCode.DPadLeft then
+		selectDirection = Vector2_new(selectDirection.x - 1 * buttonModifier, selectDirection.y)
+	elseif inputObject.KeyCode == KeyCode.DPadRight then
+		selectDirection = Vector2_new(selectDirection.x + 1 * buttonModifier, selectDirection.y)
+	elseif inputObject.KeyCode == KeyCode.DPadUp then
+		selectDirection = Vector2_new(selectDirection.x, selectDirection.y - 1 * buttonModifier)
+	elseif inputObject.KeyCode == KeyCode.DPadDown then
+		selectDirection = Vector2_new(selectDirection.x, selectDirection.y + 1 * buttonModifier)
 	else
-		selectDirection = Vector2.new(0,0)
+		selectDirection = Vector2_new(0, 0)
 	end
 
 	return selectDirection
@@ -1087,23 +1137,15 @@ end
 
 local selectToolExperiment = function(actionName, inputState, inputObject)
 	local inputDirection = getInputDirection(inputObject)
+	if inputDirection == Vector2_new(0, 0) then return end
+	local angle = atan2(inputDirection.y, inputDirection.x) - atan2(-1, 0)
+	if angle < 0 then angle = angle + (pi * 2) end
 
-	if inputDirection == Vector2.new(0,0) then
-		return
-	end
+	local quarterPi = (pi * 0.25)
 
-	local angle = math.atan2(inputDirection.y, inputDirection.x) - math.atan2(-1, 0)
-	if angle < 0 then
-		angle = angle + (math.pi * 2)
-	end
-
-	local quarterPi = (math.pi * 0.25)
-
-	local index = (angle/quarterPi) + 1
-	index = math.floor(index + 0.5) -- round index to whole number
-	if index > NumberOfHotbarSlots then
-		index = 1
-	end
+	local index = (angle / quarterPi) + 1
+	index = floor(index + 0.5) -- round index to whole number
+	if index > NumberOfHotbarSlots then index = 1 end
 
 	if index > 0 then
 		local selectedSlot = Slots[index]
@@ -1116,19 +1158,16 @@ local selectToolExperiment = function(actionName, inputState, inputObject)
 end
 
 changeToolFunc = function(actionName, inputState, inputObject)
-	if inputState ~= Enum.UserInputState.Begin then return end
+	if inputState ~= UserInputState.Begin then return end
 
 	if lastChangeToolInputObject then
-		if (lastChangeToolInputObject.KeyCode == Enum.KeyCode.ButtonR1 and
-			inputObject.KeyCode == Enum.KeyCode.ButtonL1) or
-			(lastChangeToolInputObject.KeyCode == Enum.KeyCode.ButtonL1 and
-			inputObject.KeyCode == Enum.KeyCode.ButtonR1) then
-				if (tick() - lastChangeToolInputTime) <= maxEquipDeltaTime then
-					UnequipAllTools()
-					lastChangeToolInputObject = inputObject
-					lastChangeToolInputTime = tick()
-					return
-				end
+		if (lastChangeToolInputObject.KeyCode == KeyCode.ButtonR1 and inputObject.KeyCode == KeyCode.ButtonL1) or (lastChangeToolInputObject.KeyCode == KeyCode.ButtonL1 and inputObject.KeyCode == KeyCode.ButtonR1) then
+			if (tick() - lastChangeToolInputTime) <= maxEquipDeltaTime then
+				UnequipAllTools()
+				lastChangeToolInputObject = inputObject
+				lastChangeToolInputTime = tick()
+				return
+			end
 		end
 	end
 
@@ -1139,7 +1178,7 @@ changeToolFunc = function(actionName, inputState, inputObject)
 		if lastChangeToolInputObject ~= inputObject then return end
 
 		local moveDirection = 0
-		if (inputObject.KeyCode == Enum.KeyCode.ButtonL1) then
+		if (inputObject.KeyCode == KeyCode.ButtonL1) then
 			moveDirection = -1
 		else
 			moveDirection = 1
@@ -1236,7 +1275,7 @@ function changeSlot(slot)
 		else
 			local startSize = slot.Frame.Size
 			local startPosition = slot.Frame.Position
-			slot.Frame:TweenSizeAndPosition(startSize + UDim2.new(0, 10, 0, 10), startPosition - UDim2.new(0, 5, 0, 5), Enum.EasingDirection.Out, Enum.EasingStyle.Quad, .1, true, function() slot.Frame:TweenSizeAndPosition(startSize, startPosition, Enum.EasingDirection.In, Enum.EasingStyle.Quad, .1, true) end)
+			slot.Frame:TweenSizeAndPosition(startSize + UDim2_new(0, 10, 0, 10), startPosition - UDim2_new(0, 5, 0, 5), EasingDirection.Out, EasingStyle.Quad, 0.1, true, function() slot.Frame:TweenSizeAndPosition(startSize, startPosition, EasingDirection.In, EasingStyle.Quad, 0.1, true) end)
 			slot.Frame.BorderSizePixel = 3
 			VRInventorySelector.SelectionImageObject.Visible = true
 		end
@@ -1261,7 +1300,7 @@ end
 
 function enableGamepadInventoryControl()
 	local goBackOneLevel = function(actionName, inputState, inputObject)
-		if inputState ~= Enum.UserInputState.Begin then return end
+		if inputState ~= UserInputState.Begin then return end
 
 		local selectedSlot = getGamepadSwapSlot()
 		if selectedSlot then
@@ -1276,8 +1315,8 @@ function enableGamepadInventoryControl()
 		end
 	end
 
-	ContextActionService:BindCoreAction("RBXBackpackHasGamepadFocus", noOpFunc, false, Enum.UserInputType.Gamepad1)
-	ContextActionService:BindCoreAction("RBXCloseInventory", goBackOneLevel, false, Enum.KeyCode.ButtonB, Enum.KeyCode.ButtonStart)
+	ContextActionService:BindCoreAction("RBXBackpackHasGamepadFocus", noOpFunc, false, UserInputType.Gamepad1)
+	ContextActionService:BindCoreAction("RBXCloseInventory", goBackOneLevel, false, KeyCode.ButtonB, KeyCode.ButtonStart)
 
 	-- Gaze select will automatically select the object for us!
 	if not UseGazeSelection() then
@@ -1305,7 +1344,7 @@ end
 local function bindBackpackHotbarAction()
 	if WholeThingEnabled and not GamepadActionsBound then
 		GamepadActionsBound = true
-		ContextActionService:BindCoreAction("RBXHotbarEquip", changeToolFunc, false, Enum.KeyCode.ButtonL1, Enum.KeyCode.ButtonR1)
+		ContextActionService:BindCoreAction("RBXHotbarEquip", changeToolFunc, false, KeyCode.ButtonL1, KeyCode.ButtonR1)
 	end
 end
 
@@ -1338,7 +1377,7 @@ end
 
 local function OnCoreGuiChanged(coreGuiType, enabled)
 	-- Check for enabling/disabling the whole thing
-	if coreGuiType == Enum.CoreGuiType.Backpack or coreGuiType == Enum.CoreGuiType.All then
+	if coreGuiType == CoreGuiType.Backpack or coreGuiType == CoreGuiType.All then
 		enabled = enabled and TopbarEnabled
 		WholeThingEnabled = enabled
 		MainFrame.Visible = enabled
@@ -1353,7 +1392,7 @@ local function OnCoreGuiChanged(coreGuiType, enabled)
 		end
 
 		if enabled then
-			if FullHotbarSlots >=1 then
+			if FullHotbarSlots >= 1 then
 				bindBackpackHotbarAction()
 			end
 		else
@@ -1365,19 +1404,19 @@ end
 
 local function MakeVRRoundButton(name, image)
 	local newButton = NewGui('ImageButton', name)
-	newButton.Size = UDim2.new(0, 40, 0, 40)
-	newButton.Image = "rbxasset://textures/ui/Keyboard/close_button_background.png";
+	newButton.Size = UDim2_new(0, 40, 0, 40)
+	newButton.Image = "rbxasset://textures/ui/Keyboard/close_button_background.png"
 
 	local buttonIcon = NewGui('ImageLabel', 'Icon')
-	buttonIcon.Size = UDim2.new(0.5,0,0.5,0);
-	buttonIcon.Position = UDim2.new(0.25,0,0.25,0);
-	buttonIcon.Image = image;
-	buttonIcon.Parent = newButton;
+	buttonIcon.Size = UDim2_new(0.5, 0, 0.5, 0)
+	buttonIcon.Position = UDim2_new(0.25, 0, 0.25, 0)
+	buttonIcon.Image = image
+	buttonIcon.Parent = newButton
 
 	local buttonSelectionObject = NewGui('ImageLabel', 'Selection')
-	buttonSelectionObject.Size = UDim2.new(0.9,0,0.9,0);
-	buttonSelectionObject.Position = UDim2.new(0.05,0,0.05,0);
-	buttonSelectionObject.Image = "rbxasset://textures/ui/Keyboard/close_button_selection.png";
+	buttonSelectionObject.Size = UDim2_new(0.9, 0, 0.9, 0)
+	buttonSelectionObject.Position = UDim2_new(0.05, 0, 0.05, 0)
+	buttonSelectionObject.Image = "rbxasset://textures/ui/Keyboard/close_button_selection.png"
 	newButton.SelectionImageObject = buttonSelectionObject
 
 	return newButton, buttonIcon, buttonSelectionObject
@@ -1408,18 +1447,17 @@ for i = 1, NumberOfHotbarSlots do
 end
 
 -- Up arrow to open the inventory
-OpenInventoryButton = NewGui('ImageButton', 'OpenInventory')
-do
-	OpenInventoryButton.Size = UDim2.new(0, 30, 0, 30)
+OpenInventoryButton = NewGui('ImageButton', 'OpenInventory') do
+	OpenInventoryButton.Size = UDim2_new(0, 30, 0, 30)
 	OpenInventoryButton.Image = "rbxasset://textures/ui/Backpack/ScrollUpArrow.png";
-	OpenInventoryButton.MouseButton1Click:connect(function()
+	OpenInventoryButton.MouseButton1Click:Connect(function()
 		BackpackScript.OpenClose()
 	end)
-	OpenInventoryButton.SelectionGained:connect(function()
+	OpenInventoryButton.SelectionGained:Connect(function()
 		OpenInventoryButton.ImageColor3 = ARROW_HOVER_COLOR
 	end)
-	OpenInventoryButton.SelectionLost:connect(function()
-		OpenInventoryButton.ImageColor3 = Color3.new(1,1,1)
+	OpenInventoryButton.SelectionLost:Connect(function()
+		OpenInventoryButton.ImageColor3 = Color3_new(1, 1, 1)
 	end)
 	local openInventoryButtonSelectionObject = NewGui('Frame', 'Selection')
 	openInventoryButtonSelectionObject.Visible = false
@@ -1427,20 +1465,20 @@ do
 end
 
 CloseInventoryButton = MakeVRRoundButton('CloseInventory', 'rbxasset://textures/ui/Keyboard/close_button_icon.png')
-CloseInventoryButton.Position = UDim2.new(0, 0, 0, -50)
-CloseInventoryButton.MouseButton1Click:connect(function()
+CloseInventoryButton.Position = UDim2_new(0, 0, 0, -50)
+CloseInventoryButton.MouseButton1Click:Connect(function()
 	if InventoryFrame.Visible then
 		BackpackScript.OpenClose()
 	end
 end)
 
 LeftBumperButton = NewGui('ImageLabel', 'LeftBumper')
-LeftBumperButton.Size = UDim2.new(0, 40, 0, 40)
-LeftBumperButton.Position = UDim2.new(0, -LeftBumperButton.Size.X.Offset, 0.5, -LeftBumperButton.Size.Y.Offset/2)
+LeftBumperButton.Size = UDim2_new(0, 40, 0, 40)
+LeftBumperButton.Position = UDim2_new(0, -LeftBumperButton.Size.X.Offset, 0.5, -LeftBumperButton.Size.Y.Offset * 0.5)
 
 RightBumperButton = NewGui('ImageLabel', 'RightBumper')
-RightBumperButton.Size = UDim2.new(0, 40, 0, 40)
-RightBumperButton.Position = UDim2.new(1, 0, 0.5, -RightBumperButton.Size.Y.Offset/2)
+RightBumperButton.Size = UDim2_new(0, 40, 0, 40)
+RightBumperButton.Position = UDim2_new(1, 0, 0.5, -RightBumperButton.Size.Y.Offset * 0.5)
 
 -- Make the Inventory, which holds the ScrollingFrame, the header, and the search box
 InventoryFrame = NewGui('Frame', 'Inventory')
@@ -1451,64 +1489,64 @@ InventoryFrame.Visible = false
 InventoryFrame.Parent = MainFrame
 
 VRInventorySelector = NewGui('TextButton', 'VRInventorySelector')
-VRInventorySelector.Position = UDim2.new(0, 0, 0, 0)
-VRInventorySelector.Size = UDim2.new(1, 0, 1, 0)
+VRInventorySelector.Position = UDim2_new(0, 0, 0, 0)
+VRInventorySelector.Size = UDim2_new(1, 0, 1, 0)
 VRInventorySelector.BackgroundTransparency = 1
 VRInventorySelector.Text = ""
 VRInventorySelector.Parent = InventoryFrame
 
 local selectorImage = NewGui('ImageLabel', 'Selector')
-selectorImage.Size = UDim2.new(1, 0, 1, 0)
+selectorImage.Size = UDim2_new(1, 0, 1, 0)
 selectorImage.Image = "rbxasset://textures/ui/Keyboard/key_selection_9slice.png"
-selectorImage.ScaleType = Enum.ScaleType.Slice
-selectorImage.SliceCenter = Rect.new(12,12,52,52)
+selectorImage.ScaleType = ScaleType.Slice
+selectorImage.SliceCenter = Rect_new(12, 12, 52, 52)
 selectorImage.Visible = false
 VRInventorySelector.SelectionImageObject = selectorImage
 
-VRInventorySelector.MouseButton1Click:connect(function()
+VRInventorySelector.MouseButton1Click:Connect(function()
 	vrMoveSlotToInventory()
 end)
 
 -- Make the ScrollingFrame, which holds the rest of the Slots (however many)
 ScrollingFrame = NewGui('ScrollingFrame', 'ScrollingFrame')
 ScrollingFrame.Selectable = false
-ScrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollingFrame.CanvasSize = UDim2_new(0, 0, 0, 0)
 ScrollingFrame.Parent = InventoryFrame
 
 UIGridFrame = NewGui('Frame', 'UIGridFrame')
 UIGridFrame.Selectable = false
-UIGridFrame.Size = UDim2.new(1, -(ICON_BUFFER*2), 1, 0)
-UIGridFrame.Position = UDim2.new(0, ICON_BUFFER, 0, 0)
+UIGridFrame.Size = UDim2_new(1, -(ICON_BUFFER * 2), 1, 0)
+UIGridFrame.Position = UDim2_new(0, ICON_BUFFER, 0, 0)
 UIGridFrame.Parent = ScrollingFrame
 
-UIGridLayout = Instance.new("UIGridLayout")
-UIGridLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIGridLayout.CellSize = UDim2.new(0, ICON_SIZE, 0, ICON_SIZE)
-UIGridLayout.CellPadding = UDim2.new(0, ICON_BUFFER, 0, ICON_BUFFER)
+UIGridLayout = Instance_new("UIGridLayout")
+UIGridLayout.SortOrder = SortOrder.LayoutOrder
+UIGridLayout.CellSize = UDim2_new(0, ICON_SIZE, 0, ICON_SIZE)
+UIGridLayout.CellPadding = UDim2_new(0, ICON_BUFFER, 0, ICON_BUFFER)
 UIGridLayout.Parent = UIGridFrame
 
 ScrollUpInventoryButton = MakeVRRoundButton('ScrollUpButton', 'rbxasset://textures/ui/Backpack/ScrollUpArrow.png')
-ScrollUpInventoryButton.Size = UDim2.new(0, 34, 0, 34)
-ScrollUpInventoryButton.Position = UDim2.new(0.5, -ScrollUpInventoryButton.Size.X.Offset/2, 0, INVENTORY_HEADER_SIZE + 3)
-ScrollUpInventoryButton.Icon.Position = ScrollUpInventoryButton.Icon.Position - UDim2.new(0,0,0,2)
-ScrollUpInventoryButton.MouseButton1Click:connect(function()
-	ScrollingFrame.CanvasPosition = Vector2.new(
+ScrollUpInventoryButton.Size = UDim2_new(0, 34, 0, 34)
+ScrollUpInventoryButton.Position = UDim2_new(0.5, -ScrollUpInventoryButton.Size.X.Offset * 0.5, 0, INVENTORY_HEADER_SIZE + 3)
+ScrollUpInventoryButton.Icon.Position = ScrollUpInventoryButton.Icon.Position - UDim2_new(0, 0, 0, 2)
+ScrollUpInventoryButton.MouseButton1Click:Connect(function()
+	ScrollingFrame.CanvasPosition = Vector2_new(
 		ScrollingFrame.CanvasPosition.X,
 		Clamp(0, ScrollingFrame.CanvasSize.Y.Offset - ScrollingFrame.AbsoluteWindowSize.Y, ScrollingFrame.CanvasPosition.Y - (ICON_BUFFER + ICON_SIZE)))
 end)
 
 ScrollDownInventoryButton = MakeVRRoundButton('ScrollDownButton', 'rbxasset://textures/ui/Backpack/ScrollUpArrow.png')
 ScrollDownInventoryButton.Rotation = 180
-ScrollDownInventoryButton.Icon.Position = ScrollDownInventoryButton.Icon.Position - UDim2.new(0,0,0,2)
-ScrollDownInventoryButton.Size = UDim2.new(0, 34, 0, 34)
-ScrollDownInventoryButton.Position = UDim2.new(0.5, -ScrollDownInventoryButton.Size.X.Offset/2, 1, -ScrollDownInventoryButton.Size.Y.Offset - 3)
-ScrollDownInventoryButton.MouseButton1Click:connect(function()
-	ScrollingFrame.CanvasPosition = Vector2.new(
+ScrollDownInventoryButton.Icon.Position = ScrollDownInventoryButton.Icon.Position - UDim2_new(0, 0, 0, 2)
+ScrollDownInventoryButton.Size = UDim2_new(0, 34, 0, 34)
+ScrollDownInventoryButton.Position = UDim2_new(0.5, -ScrollDownInventoryButton.Size.X.Offset * 0.5, 1, -ScrollDownInventoryButton.Size.Y.Offset - 3)
+ScrollDownInventoryButton.MouseButton1Click:Connect(function()
+	ScrollingFrame.CanvasPosition = Vector2_new(
 		ScrollingFrame.CanvasPosition.X,
 		Clamp(0, ScrollingFrame.CanvasSize.Y.Offset - ScrollingFrame.AbsoluteWindowSize.Y, ScrollingFrame.CanvasPosition.Y + (ICON_BUFFER + ICON_SIZE)))
 end)
 
-ScrollingFrame.Changed:connect(function(prop)
+ScrollingFrame.Changed:Connect(function(prop)
 	if prop == 'AbsoluteWindowSize' or prop == 'CanvasPosition' or prop == 'CanvasSize' then
 		local canScrollUp = ScrollingFrame.CanvasPosition.Y ~= 0
 		local canScrollDown = ScrollingFrame.CanvasPosition.Y < ScrollingFrame.CanvasSize.Y.Offset - ScrollingFrame.AbsoluteWindowSize.Y
@@ -1522,70 +1560,67 @@ end)
 UpdateBackpackLayout()
 
 --Make the gamepad hint frame
-local gamepadHintsFrame = Utility:Create'Frame'
-{
+local gamepadHintsFrame = Utility:Create'Frame' {
 	Name = "GamepadHintsFrame",
-	Size = UDim2.new(0, HotbarFrame.Size.X.Offset, 0, (IsTenFootInterface and 95 or 60)),
+	Size = UDim2_new(0, HotbarFrame.Size.X.Offset, 0, (IsTenFootInterface and 95 or 60)),
 	BackgroundTransparency = 1,
 	Visible = false,
 	Parent = MainFrame
 }
 
 local function addGamepadHint(hintImage, hintImageLarge, hintText)
-	local hintFrame = Utility:Create'Frame'
-	{
+	local hintFrame = Utility:Create'Frame' {
 		Name = "HintFrame",
-		Size = UDim2.new(1, 0, 1, -5),
-		Position = UDim2.new(0, 0, 0, 0),
+		Size = UDim2_new(1, 0, 1, -5),
+		Position = UDim2_new(0, 0, 0, 0),
 		BackgroundTransparency = 1,
 		Parent = gamepadHintsFrame
 	}
 
-	local hintImage = Utility:Create'ImageLabel'
-	{
+	local hintImage = Utility:Create'ImageLabel' {
 		Name = "HintImage",
-		Size = (IsTenFootInterface and UDim2.new(0,90,0,90) or UDim2.new(0,60,0,60)),
+		Size = (IsTenFootInterface and UDim2_new(0, 90, 0, 90) or UDim2_new(0, 60, 0, 60)),
 		BackgroundTransparency = 1,
 		Image = (IsTenFootInterface and hintImageLarge or hintImage),
 		Parent = hintFrame
 	}
 
-	local hintText = Utility:Create'TextLabel'
-	{
+	local hintText = Utility:Create'TextLabel' {
 		Name = "HintText",
-		Position = UDim2.new(0, (IsTenFootInterface and 100 or 70), 0, 0),
-		Size = UDim2.new(1, -(IsTenFootInterface and 100 or 70), 1, 0),
-		Font = Enum.Font.SourceSansBold,
-		FontSize = (IsTenFootInterface and Enum.FontSize.Size36 or Enum.FontSize.Size24),
+		Position = UDim2_new(0, (IsTenFootInterface and 100 or 70), 0, 0),
+		Size = UDim2_new(1, -(IsTenFootInterface and 100 or 70), 1, 0),
+		Font = Font.SourceSansBold,
+		TextSize = (IsTenFootInterface and 36 or 24),
 		BackgroundTransparency = 1,
 		Text = hintText,
-		TextColor3 = Color3.new(1,1,1),
-		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3_new(1, 1, 1),
+		TextXAlignment = TextXAlignment.Left,
 		Parent = hintFrame
 	}
-	local textSizeConstraint = Instance.new("UITextSizeConstraint", hintText)
+	local textSizeConstraint = Instance_new("UITextSizeConstraint")
 	textSizeConstraint.MaxTextSize = hintText.TextSize
+	textSizeConstraint.Parent = hintText
 end
 
 local function resizeGamepadHintsFrame()
-	gamepadHintsFrame.Size = UDim2.new(HotbarFrame.Size.X.Scale, HotbarFrame.Size.X.Offset, 0, (IsTenFootInterface and 95 or 60))
-	gamepadHintsFrame.Position = UDim2.new(HotbarFrame.Position.X.Scale, HotbarFrame.Position.X.Offset, InventoryFrame.Position.Y.Scale, InventoryFrame.Position.Y.Offset - gamepadHintsFrame.Size.Y.Offset)
+	gamepadHintsFrame.Size = UDim2_new(HotbarFrame.Size.X.Scale, HotbarFrame.Size.X.Offset, 0, (IsTenFootInterface and 95 or 60))
+	gamepadHintsFrame.Position = UDim2_new(HotbarFrame.Position.X.Scale, HotbarFrame.Position.X.Offset, InventoryFrame.Position.Y.Scale, InventoryFrame.Position.Y.Offset - gamepadHintsFrame.Size.Y.Offset)
 
 	local spaceTaken = 0
 
 	local gamepadHints = gamepadHintsFrame:GetChildren()
 	--First get the total space taken by all the hints
 	for i = 1, #gamepadHints do
-		gamepadHints[i].Size = UDim2.new(1, 0, 1, -5)
-		gamepadHints[i].Position = UDim2.new(0, 0, 0, 0)
+		gamepadHints[i].Size = UDim2_new(1, 0, 1, -5)
+		gamepadHints[i].Position = UDim2_new(0, 0, 0, 0)
 		spaceTaken = spaceTaken + (gamepadHints[i].HintText.Position.X.Offset + gamepadHints[i].HintText.TextBounds.X)
 	end
 
 	--The space between all the frames should be equal
-	local spaceBetweenElements = (gamepadHintsFrame.AbsoluteSize.X - spaceTaken)/(#gamepadHints - 1)
+	local spaceBetweenElements = (gamepadHintsFrame.AbsoluteSize.X - spaceTaken) / (#gamepadHints - 1)
 	for i = 1, #gamepadHints do
-		gamepadHints[i].Position = (i == 1 and UDim2.new(0, 0, 0, 0) or UDim2.new(0, gamepadHints[i-1].Position.X.Offset + gamepadHints[i-1].Size.X.Offset + spaceBetweenElements, 0, 0))
-		gamepadHints[i].Size = UDim2.new(0, (gamepadHints[i].HintText.Position.X.Offset + gamepadHints[i].HintText.TextBounds.X), 1, -5)
+		gamepadHints[i].Position = (i == 1 and UDim2_new(0, 0, 0, 0) or UDim2_new(0, gamepadHints[i - 1].Position.X.Offset + gamepadHints[i - 1].Size.X.Offset + spaceBetweenElements, 0, 0))
+		gamepadHints[i].Size = UDim2_new(0, (gamepadHints[i].HintText.Position.X.Offset + gamepadHints[i].HintText.TextBounds.X), 1, -5)
 	end
 end
 
@@ -1597,49 +1632,49 @@ do -- Search stuff
 	local searchFrame = NewGui('Frame', 'Search')
 	searchFrame.BackgroundColor3 = SEARCH_BACKGROUND_COLOR
 	searchFrame.BackgroundTransparency = SEARCH_BACKGROUND_FADE
-	searchFrame.Size = UDim2.new(0, SEARCH_WIDTH - (SEARCH_BUFFER * 2), 0, INVENTORY_HEADER_SIZE - (SEARCH_BUFFER * 2))
-	searchFrame.Position = UDim2.new(1, -searchFrame.Size.X.Offset - SEARCH_BUFFER, 0, SEARCH_BUFFER)
+	searchFrame.Size = UDim2_new(0, SEARCH_WIDTH - (SEARCH_BUFFER * 2), 0, INVENTORY_HEADER_SIZE - (SEARCH_BUFFER * 2))
+	searchFrame.Position = UDim2_new(1, -searchFrame.Size.X.Offset - SEARCH_BUFFER, 0, SEARCH_BUFFER)
 	searchFrame.Parent = InventoryFrame
 
 	local searchBox = NewGui('TextBox', 'TextBox')
 	searchBox.Text = SEARCH_TEXT
 	searchBox.ClearTextOnFocus = false
-	searchBox.FontSize = Enum.FontSize.Size24
-	searchBox.TextXAlignment = Enum.TextXAlignment.Left
-	searchBox.Size = searchFrame.Size - UDim2.new(0, SEARCH_TEXT_OFFSET_FROMLEFT, 0, 0)
-	searchBox.Position = UDim2.new(0, SEARCH_TEXT_OFFSET_FROMLEFT, 0, 0)
+	searchBox.TextSize = 24
+	searchBox.TextXAlignment = TextXAlignment.Left
+	searchBox.Size = searchFrame.Size - UDim2_new(0, SEARCH_TEXT_OFFSET_FROMLEFT, 0, 0)
+	searchBox.Position = UDim2_new(0, SEARCH_TEXT_OFFSET_FROMLEFT, 0, 0)
 	searchBox.Parent = searchFrame
 
 	local xButton = NewGui('TextButton', 'X')
 	xButton.Text = 'x'
 	xButton.TextColor3 = SLOT_EQUIP_COLOR
-	xButton.FontSize = Enum.FontSize.Size24
-	xButton.TextYAlignment = Enum.TextYAlignment.Bottom
+	xButton.TextSize = 24
+	xButton.TextYAlignment = TextYAlignment.Bottom
 	xButton.BackgroundColor3 = SEARCH_BACKGROUND_COLOR
 	xButton.BackgroundTransparency = 0
-	xButton.Size = UDim2.new(0, searchFrame.Size.Y.Offset - (SEARCH_BUFFER * 2), 0, searchFrame.Size.Y.Offset - (SEARCH_BUFFER * 2))
-	xButton.Position = UDim2.new(1, -xButton.Size.X.Offset - (SEARCH_BUFFER * 2), 0.5, -xButton.Size.Y.Offset / 2)
+	xButton.Size = UDim2_new(0, searchFrame.Size.Y.Offset - (SEARCH_BUFFER * 2), 0, searchFrame.Size.Y.Offset - (SEARCH_BUFFER * 2))
+	xButton.Position = UDim2_new(1, -xButton.Size.X.Offset - (SEARCH_BUFFER * 2), 0.5, -xButton.Size.Y.Offset * 0.5)
 	xButton.ZIndex = 0
 	xButton.Visible = false
 	xButton.BorderSizePixel = 0
 	xButton.Parent = searchFrame
 
 	local function search()
-		local terms = {}
+		local terms = { }
 		for word in searchBox.Text:gmatch('%S+') do
 			terms[word:lower()] = true
 		end
 
-		local hitTable = {}
+		local hitTable = { }
 		for i = NumberOfHotbarSlots + 1, #Slots do -- Only search inventory slots
 			local slot = Slots[i]
 			local hits = slot:CheckTerms(terms)
-			table.insert(hitTable, {slot, hits})
+			insert(hitTable, { slot, hits })
 			slot.Frame.Visible = false
 			slot.Frame.Parent = InventoryFrame
 		end
 
-		table.sort(hitTable, function(left, right)
+		sort(hitTable, function(left, right)
 			return left[2] > right[2]
 		end)
 		ViewingSearchResults = true
@@ -1655,7 +1690,7 @@ do -- Search stuff
 			end
 		end
 
-		ScrollingFrame.CanvasPosition = Vector2.new(0, 0)
+		ScrollingFrame.CanvasPosition = Vector2_new(0, 0)
 		UpdateScrollingFrameCanvasSize()
 
 		xButton.ZIndex = 3
@@ -1707,19 +1742,19 @@ do -- Search stuff
 		end
 	end
 
-	searchBox.Focused:connect(onFocused)
-	xButton.MouseButton1Click:connect(reset)
-	searchBox.Changed:connect(onChanged)
-	searchBox.FocusLost:connect(focusLost)
+	searchBox.Focused:Connect(onFocused)
+	xButton.MouseButton1Click:Connect(reset)
+	searchBox.Changed:Connect(onChanged)
+	searchBox.FocusLost:Connect(focusLost)
 
-	BackpackScript.StateChanged.Event:connect(function(isNowOpen)
+	BackpackScript.StateChanged.Event:Connect(function(isNowOpen)
 		xButton.Modal = isNowOpen -- Allows free mouse movement even in first person
 		if not isNowOpen then
 			reset()
 		end
 	end)
 
-	HotkeyFns[Enum.KeyCode.Escape.Value] = function(isProcessed)
+	HotkeyFns[KeyCode.Escape.Value] = function(isProcessed)
 		if isProcessed then -- Pressed from within a TextBox
 			reset()
 		elseif InventoryFrame.Visible then
@@ -1728,18 +1763,18 @@ do -- Search stuff
 	end
 
 	local function detectGamepad(lastInputType)
-		if lastInputType == Enum.UserInputType.Gamepad1 and not UserInputService.VREnabled then
+		if lastInputType == UserInputType.Gamepad1 and not UserInputService.VREnabled then
 			searchFrame.Visible = false
 		else
 			searchFrame.Visible = true
 		end
 	end
-	UserInputService.LastInputTypeChanged:connect(detectGamepad)
+	UserInputService.LastInputTypeChanged:Connect(detectGamepad)
 end
 
 do -- Make the Inventory expand/collapse arrow (unless TopBar)
 	local removeHotBarSlot = function(name, state, input)
-		if state ~= Enum.UserInputState.Begin then return end
+		if state ~= UserInputState.Begin then return end
 		if not GuiService.SelectedCoreObject then return end
 
 		for i = 1, NumberOfHotbarSlots do
@@ -1781,7 +1816,7 @@ do -- Make the Inventory expand/collapse arrow (unless TopBar)
 		end
 
 		if InventoryFrame.Visible then
-			ContextActionService:BindCoreAction("RBXRemoveSlot", removeHotBarSlot, false, Enum.KeyCode.ButtonX)
+			ContextActionService:BindCoreAction("RBXRemoveSlot", removeHotBarSlot, false, KeyCode.ButtonX)
 		else
 			ContextActionService:UnbindCoreAction("RBXRemoveSlot")
 		end
@@ -1802,7 +1837,7 @@ while not Player do
 end
 
 -- Listen to current and all future characters of our player
-Player.CharacterAdded:connect(OnCharacterAdded)
+Player.CharacterAdded:Connect(OnCharacterAdded)
 if Player.Character then
 	OnCharacterAdded(Player.Character)
 end
@@ -1810,16 +1845,16 @@ end
 do -- Hotkey stuff
 	-- Init HotkeyStrings, used for eating hotkeys
 	for i = 0, 9 do
-		table.insert(HotkeyStrings, tostring(i))
+		insert(HotkeyStrings, tostring(i))
 	end
-	table.insert(HotkeyStrings, ARROW_HOTKEY_STRING)
+	insert(HotkeyStrings, ARROW_HOTKEY_STRING)
 
 	-- Listen to key down
-	UserInputService.InputBegan:connect(OnInputBegan)
+	UserInputService.InputBegan:Connect(OnInputBegan)
 
 	-- Listen to ANY TextBox gaining or losing focus, for disabling all hotkeys
-	UserInputService.TextBoxFocused:connect(function() TextBoxFocused = true end)
-	UserInputService.TextBoxFocusReleased:connect(function() TextBoxFocused = false end)
+	UserInputService.TextBoxFocused:Connect(function() TextBoxFocused = true end)
+	UserInputService.TextBoxFocusReleased:Connect(function() TextBoxFocused = false end)
 
 	-- Manual unequip for HopperBins on drop button pressed
 	HotkeyFns[DROP_HOTKEY_VALUE] = function() --NOTE: HopperBin
@@ -1829,20 +1864,20 @@ do -- Hotkey stuff
 	end
 
 	-- Listen to keyboard status, for showing/hiding hotkey labels
-	UserInputService.Changed:connect(OnUISChanged)
+	UserInputService.Changed:Connect(OnUISChanged)
 	OnUISChanged('KeyboardEnabled')
 
 	-- Listen to gamepad status, for allowing gamepad style selection/equip
-	if UserInputService:GetGamepadConnected(Enum.UserInputType.Gamepad1) then
+	if UserInputService:GetGamepadConnected(UserInputType.Gamepad1) then
 		gamepadConnected()
 	end
-	UserInputService.GamepadConnected:connect(function(gamepadEnum)
-		if gamepadEnum == Enum.UserInputType.Gamepad1 then
+	UserInputService.GamepadConnected:Connect(function(gamepadEnum)
+		if gamepadEnum == UserInputType.Gamepad1 then
 			gamepadConnected()
 		end
 	end)
-	UserInputService.GamepadDisconnected:connect(function(gamepadEnum)
-		if gamepadEnum == Enum.UserInputType.Gamepad1 then
+	UserInputService.GamepadDisconnected:Connect(function(gamepadEnum)
+		if gamepadEnum == UserInputType.Gamepad1 then
 			gamepadDisconnected()
 		end
 	end)
@@ -1851,12 +1886,12 @@ end
 function BackpackScript:TopbarEnabledChanged(enabled)
 	TopbarEnabled = enabled
 	-- Update coregui to reflect new topbar status
-	OnCoreGuiChanged(Enum.CoreGuiType.Backpack, StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.Backpack))
+	OnCoreGuiChanged(CoreGuiType.Backpack, StarterGui:GetCoreGuiEnabled(CoreGuiType.Backpack))
 end
 
 -- Listen to enable/disable signals from the StarterGui
-StarterGui.CoreGuiChangedSignal:connect(OnCoreGuiChanged)
-local backpackType, healthType = Enum.CoreGuiType.Backpack, Enum.CoreGuiType.Health
+StarterGui.CoreGuiChangedSignal:Connect(OnCoreGuiChanged)
+local backpackType, healthType = CoreGuiType.Backpack, CoreGuiType.Health
 OnCoreGuiChanged(backpackType, StarterGui:GetCoreGuiEnabled(backpackType))
 OnCoreGuiChanged(healthType, StarterGui:GetCoreGuiEnabled(healthType))
 
@@ -1875,10 +1910,10 @@ local function OnVREnabled()
 		local VRHub = require(RobloxGui.Modules.VR.VRHub)
 
 		local slotsToStuds = (ICON_SIZE + ICON_BUFFER) / VR_PANEL_RESOLUTION
-		local inventoryOpenStudSize = Vector2.new(6.25, 7.2) * slotsToStuds
-		local inventoryClosedStudSize = Vector2.new(6.25, 2) * slotsToStuds -- Closed size is computed as numberOfHotbarSlots + 0.25
-		local inventoryOpenPanelCF = CFrame.new(0, 0.6, 0)
-		local inventoryClosedPanelCF = CFrame.new(0, -1, 0)
+		local inventoryOpenStudSize = Vector2_new(6.25, 7.2) * slotsToStuds
+		local inventoryClosedStudSize = Vector2_new(6.25, 2) * slotsToStuds -- Closed size is computed as numberOfHotbarSlots + 0.25
+		local inventoryOpenPanelCF = CFrame_new(0, 0.6, 0)
+		local inventoryClosedPanelCF = CFrame_new(0, -1, 0)
 		local currentPanelLocalCF = inventoryClosedPanelCF
 
 		VRHub:RegisterModule(BackpackScript)
@@ -1887,7 +1922,7 @@ local function OnVREnabled()
 		BackpackPanel:ResizeStuds(inventoryClosedStudSize.x, inventoryClosedStudSize.y, VR_PANEL_RESOLUTION)
 		BackpackPanel:SetType(Panel3D.Type.Standard, { CFrame = currentPanelLocalCF })
 		BackpackPanel:RequestPositionUpdate()
-		local panelOriginCF = CFrame.new()
+		local panelOriginCF = CFrame_new()
 		function BackpackPanel:CalculateTransparency()
 			if InventoryFrame.Visible then
 				return 0
@@ -1895,7 +1930,7 @@ local function OnVREnabled()
 
 			local now = tick()
 			local timeSinceToolChange = now - TimeOfLastToolChange
-			local transparency = math.clamp(timeSinceToolChange / VR_FADE_TIME, 0, 1)
+			local transparency = clamp(timeSinceToolChange / VR_FADE_TIME, 0, 1)
 
 			if transparency == 1 and BackpackPanel:IsVisible() then
 				BackpackPanel:SetVisible(false)
@@ -1935,7 +1970,7 @@ local function OnVREnabled()
 		-- Stop the ScrollingFrame from automatically scrolling when you hover over items
 		ScrollingFrame.ScrollingEnabled = false
 
-		BackpackStateChangedInVRConn = BackpackScript.StateChanged.Event:connect(function(isNowOpen)
+		BackpackStateChangedInVRConn = BackpackScript.StateChanged.Event:Connect(function(isNowOpen)
 			if isNowOpen then
 				VRHub:FireModuleOpened(BackpackScript.ModuleName)
 				BackpackPanel:ResizeStuds(inventoryOpenStudSize.x, inventoryOpenStudSize.y, VR_PANEL_RESOLUTION)
@@ -1947,7 +1982,7 @@ local function OnVREnabled()
 			end
 		end)
 
-		VRModuleOpenedConn = VRHub.ModuleOpened.Event:connect(function(moduleName)
+		VRModuleOpenedConn = VRHub.ModuleOpened.Event:Connect(function(moduleName)
 			local openedModule = VRHub:GetModule(moduleName)
 			if openedModule ~= BackpackScript and openedModule.VRIsExclusive then
 				BackpackPanel:SetVisible(EvaluateBackpackPanelVisibility(false))
@@ -1956,7 +1991,7 @@ local function OnVREnabled()
 				end
 			end
 		end)
-		VRModuleClosedConn = VRHub.ModuleClosed.Event:connect(function(moduleName)
+		VRModuleClosedConn = VRHub.ModuleClosed.Event:Connect(function(moduleName)
 			local openedModule = VRHub:GetModule(moduleName)
 			if openedModule ~= BackpackScript then
 				BackpackPanel:SetVisible(EvaluateBackpackPanelVisibility(true))
@@ -1987,15 +2022,15 @@ local function OnVREnabled()
 		end
 
 		if BackpackStateChangedInVRConn then
-			BackpackStateChangedInVRConn:disconnect()
+			BackpackStateChangedInVRConn:Disconnect()
 			BackpackStateChangedInVRConn = nil
 		end
 		if VRModuleOpenedConn then
-			VRModuleOpenedConn:disconnect()
+			VRModuleOpenedConn:Disconnect()
 			VRModuleOpenedConn = nil
 		end
 		if VRModuleClosedConn then
-			VRModuleClosedConn:disconnect()
+			VRModuleClosedConn:Disconnect()
 			VRModuleClosedConn = nil
 		end
 	end
@@ -2004,7 +2039,7 @@ local function OnVREnabled()
 	local newSlotTotal = IsVR and HOTBAR_SLOTS_VR or (IS_PHONE and HOTBAR_SLOTS_MINI or HOTBAR_SLOTS_FULL)
 	SetNumberOfHotbarSlots(newSlotTotal)
 end
-VRService:GetPropertyChangedSignal("VREnabled"):connect(OnVREnabled)
+VRService:GetPropertyChangedSignal("VREnabled"):Connect(OnVREnabled)
 OnVREnabled()
 
 return BackpackScript

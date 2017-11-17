@@ -11,6 +11,48 @@
 			CreatePlaceInPlayerInventoryAsync
 --]]
 
+local game = game
+local wait = wait
+local spawn = spawn
+local tick = tick
+local typeof = typeof
+local require = require
+local pcall = pcall
+local tonumber, tostring = tonumber, tostring
+local type = type
+
+local Instance = Instance local Instance_new = Instance.new
+local Color3 = Color3 local Color3_new = Color3.new
+local UDim2 = UDim2 local UDim2_new = UDim2.new
+local Vector2 = Vector2 local Vector2_new = Vector2.new
+
+local math = math
+	local min = math.min
+	local abs = math.abs
+local Enum = Enum
+	local EasingDirection, EasingStyle = Enum.EasingDirection, Enum.EasingStyle
+	local Font = Enum.Font
+	local TextYAlignment, TextXAlignment = Enum.TextYAlignment, Enum.TextXAlignment
+	local ThumbnailSize, ThumbnailType = Enum.ThumbnailSize, Enum.ThumbnailType
+	local FrameStyle, ButtonStyle = Enum.FrameStyle, Enum.ButtonStyle
+	local FriendRequestEvent = Enum.FriendRequestEvent
+	local SavedQualitySetting = Enum.SavedQualitySetting
+	local CenterDialogType = Enum.CenterDialogType
+	local UserInputState = Enum.UserInputState
+	local KeyCode = Enum.KeyCode
+	local Platform = Enum.Platform
+
+local function remove(tbl, index)
+	if type(index) == "number" then
+		tbl[index] = nil
+		local tlen = #tbl
+		for i = index + 1, tlen do
+			tbl[i - 1] = tbl[i]
+		end
+		tbl[tlen] = nil
+	end
+end
+
 --[[ Services ]]--
 local BadgeService = game:GetService('BadgeService')
 local GuiService = game:GetService('GuiService')
@@ -56,10 +98,10 @@ while not Players.LocalPlayer do
 end
 LocalPlayer = Players.LocalPlayer
 local RbxGui = script.Parent
-local NotificationQueue = {}
-local OverflowQueue = {}
-local FriendRequestBlacklist = {}
-local BadgeBlacklist = {}
+local NotificationQueue = { }
+local OverflowQueue = { }
+local FriendRequestBlacklist = { }
+local BadgeBlacklist = { }
 local CurrentGraphicsQualityLevel = GameSettings.SavedQualityLevel.Value
 local BindableEvent_SendNotification = Instance.new('BindableEvent')
 BindableEvent_SendNotification.Name = "SendNotification"
@@ -87,13 +129,15 @@ local NOTIFICATION_TEXT_Y_OFFSET = isTenFootInterface and -16 or 1
 local NOTIFICATION_FRAME_WIDTH = isTenFootInterface and 450 or 200
 local NOTIFICATION_TEXT_HEIGHT = isTenFootInterface and 85 or 28
 local NOTIFICATION_TEXT_HEIGHT_MAX = isTenFootInterface and 170 or 56
-local NOTIFICATION_TITLE_FONT_SIZE = isTenFootInterface and Enum.FontSize.Size42 or Enum.FontSize.Size18
-local NOTIFICATION_TEXT_FONT_SIZE = isTenFootInterface and Enum.FontSize.Size36 or Enum.FontSize.Size14
+local NOTIFICATION_TITLE_FONT_SIZE = isTenFootInterface and 42 or 18
+local NOTIFICATION_TEXT_FONT_SIZE = isTenFootInterface and 36 or 14
+--local NOTIFICATION_TITLE_FONT_SIZE = isTenFootInterface and Enum.FontSize.Size42 or Enum.FontSize.Size18
+--local NOTIFICATION_TEXT_FONT_SIZE = isTenFootInterface and Enum.FontSize.Size36 or Enum.FontSize.Size14
 
 local IMAGE_SIZE = isTenFootInterface and 72 or 48
 
-local EASE_DIR = Enum.EasingDirection.InOut
-local EASE_STYLE = Enum.EasingStyle.Sine
+local EASE_DIR = EasingDirection.InOut
+local EASE_STYLE = EasingStyle.Sine
 local TWEEN_TIME = 0.35
 local DEFAULT_NOTIFICATION_DURATION = 5
 local MAX_GET_FRIEND_IMAGE_YIELD_TIME = 5
@@ -105,13 +149,13 @@ if friendRequestNotificationFIntSuccess and friendRequestNotificationFIntValue ~
 end
 
 --[[ Images ]]--
-local PLAYER_POINTS_IMG = 'https://www.roblox.com/asset?id=206410433'
-local BADGE_IMG = 'https://www.roblox.com/asset?id=206410289'
+local PLAYER_POINTS_IMG = 'rbxassetid://206410433'
+local BADGE_IMG = 'rbxassetid://206410289'
 local FRIEND_IMAGE = 'https://www.roblox.com/thumbs/avatar.ashx?userId='
 
 --[[ Gui Creation ]]--
 local function createFrame(name, size, position, bgt)
-	local frame = Instance.new('Frame')
+	local frame = Instance_new('Frame')
 	frame.Name = name
 	frame.Size = size
 	frame.Position = position
@@ -121,68 +165,71 @@ local function createFrame(name, size, position, bgt)
 end
 
 local function createTextButton(name, text, position)
-	local button = Instance.new('TextButton')
+	local button = Instance_new('TextButton')
 	button.Name = name
-	button.Size = UDim2.new(0.5, -2, 0.5, 0)
+	button.Size = UDim2_new(0.5, -2, 0.5, 0)
 	button.Position = position
 	button.BackgroundTransparency = BG_TRANSPARENCY
 	button.BackgroundColor3 = Color3.new(0, 0, 0)
-	button.Font = Enum.Font.SourceSansBold
-	button.FontSize = Enum.FontSize.Size18
-	button.TextColor3 = Color3.new(1, 1, 1)
+	button.Font = Font.SourceSansBold
+	button.TextSize = 18
+--	button.FontSize = Enum.FontSize.Size18
+	button.TextColor3 = Color3_new(1, 1, 1)
 	button.Text = text
 
 	return button
 end
 
-local NotificationFrame = createFrame("NotificationFrame", UDim2.new(0, NOTIFICATION_FRAME_WIDTH, 0.42, 0), UDim2.new(1, -NOTIFICATION_FRAME_WIDTH-4, 0.50, 0), 1.0)
+local NotificationFrame = createFrame("NotificationFrame", UDim2_new(0, NOTIFICATION_FRAME_WIDTH, 0.42, 0), UDim2_new(1, -NOTIFICATION_FRAME_WIDTH - 4, 0.5, 0), 1.)
 NotificationFrame.Parent = RbxGui
 
-local DefaultNotification = createFrame("Notification", UDim2.new(1, 0, 0, NOTIFICATION_Y_OFFSET), UDim2.new(0, 0, 0, 0), BG_TRANSPARENCY)
-DefaultNotification.BackgroundColor3 = Color3.new(0, 0, 0)
+local DefaultNotification = createFrame("Notification", UDim2_new(1, 0, 0, NOTIFICATION_Y_OFFSET), UDim2_new(0, 0, 0, 0), BG_TRANSPARENCY)
+DefaultNotification.BackgroundColor3 = Color3_new(0, 0, 0)
 DefaultNotification.BorderSizePixel = 0
 
-local NotificationTitle = Instance.new('TextLabel')
+local NotificationTitle = Instance_new('TextLabel')
 NotificationTitle.Name = "NotificationTitle"
-NotificationTitle.Size = UDim2.new(0, 0, 0, 0)
-NotificationTitle.Position = UDim2.new(0.5, 0, 0.5, -12)
+NotificationTitle.Size = UDim2_new(0, 0, 0, 0)
+NotificationTitle.Position = UDim2_new(0.5, 0, 0.5, -12)
 NotificationTitle.BackgroundTransparency = 1
-NotificationTitle.Font = Enum.Font.SourceSansBold
-NotificationTitle.FontSize = NOTIFICATION_TITLE_FONT_SIZE
-NotificationTitle.TextColor3 = Color3.new(0.97, 0.97, 0.97)
+NotificationTitle.Font = Font.SourceSansBold
+NotificationTitle.TextSize = NOTIFICATION_TITLE_FONT_SIZE
+NotificationTitle.TextColor3 = RGB(247, 247, 247)
 
 local NotificationText = Instance.new('TextLabel')
 NotificationText.Name = "NotificationText"
-NotificationText.Size = UDim2.new(1, -20, 0, 28)
-NotificationText.Position = UDim2.new(0, 10, 0.5, 1)
+NotificationText.Size = UDim2_new(1, -20, 0, 28)
+NotificationText.Position = UDim2_new(0, 10, 0.5, 1)
 NotificationText.BackgroundTransparency = 1
-NotificationText.Font = Enum.Font.SourceSans
-NotificationText.FontSize = NOTIFICATION_TEXT_FONT_SIZE
-NotificationText.TextColor3 = Color3.new(0.92, 0.92, 0.92)
+NotificationText.Font = Font.SourceSans
+NotificationText.TextSize = NOTIFICATION_TEXT_FONT_SIZE
+NotificationText.TextColor3 = RGB(235, 235, 235)
 NotificationText.TextWrap = true
-NotificationText.TextYAlignment = Enum.TextYAlignment.Top
+NotificationText.TextYAlignment = TextYAlignment.Top
 
 local NotificationImage = Instance.new('ImageLabel')
 NotificationImage.Name = "NotificationImage"
-NotificationImage.Size = UDim2.new(0, IMAGE_SIZE, 0, IMAGE_SIZE)
-NotificationImage.Position = UDim2.new(0, (1.0/6.0) * IMAGE_SIZE, 0, 0.5 * (NOTIFICATION_Y_OFFSET - IMAGE_SIZE))
+NotificationImage.Size = UDim2_new(0, IMAGE_SIZE, 0, IMAGE_SIZE)
+NotificationImage.Position = UDim2_new(0, 0.166666667 * IMAGE_SIZE, 0, 0.5 * (NOTIFICATION_Y_OFFSET - IMAGE_SIZE))
+--NotificationImage.Position = UDim2_new(0, (1.0/6.0) * IMAGE_SIZE, 0, 0.5 * (NOTIFICATION_Y_OFFSET - IMAGE_SIZE))
 NotificationImage.BackgroundTransparency = 1
 NotificationImage.Image = ""
 
 -- Would really like to get rid of this but some events still require this
-local PopupFrame = createFrame("PopupFrame", UDim2.new(0, 360, 0, 160), UDim2.new(0.5, -180, 0.5, -50), 0)
-PopupFrame.Style = Enum.FrameStyle.DropShadow
+local PopupFrame = createFrame("PopupFrame", UDim2_new(0, 360, 0, 160), UDim2_new(0.5, -180, 0.5, -50), 0)
+PopupFrame.Style = FrameStyle.DropShadow
 PopupFrame.ZIndex = 4
 PopupFrame.Visible = false
 PopupFrame.Parent = RbxGui
 
 local PopupAcceptButton = Instance.new('TextButton')
 PopupAcceptButton.Name = "PopupAcceptButton"
-PopupAcceptButton.Size = UDim2.new(0, 100, 0, 50)
-PopupAcceptButton.Position = UDim2.new(0.5, -102, 1, -58)
-PopupAcceptButton.Style = Enum.ButtonStyle.RobloxRoundButton
-PopupAcceptButton.Font = Enum.Font.SourceSansBold
-PopupAcceptButton.FontSize = Enum.FontSize.Size24
+PopupAcceptButton.Size = UDim2_new(0, 100, 0, 50)
+PopupAcceptButton.Position = UDim2_new(0.5, -102, 1, -58)
+PopupAcceptButton.Style = ButtonStyle.RobloxRoundButton
+PopupAcceptButton.Font = Font.SourceSansBold
+PopupAcceptButton.TextSize = 24
+--PopupAcceptButton.FontSize = Enum.FontSize.Size24
 PopupAcceptButton.TextColor3 = Color3.new(1, 1, 1)
 PopupAcceptButton.Text = "Accept"
 PopupAcceptButton.ZIndex = 5
@@ -190,28 +237,28 @@ PopupAcceptButton.Parent = PopupFrame
 
 local PopupDeclineButton = PopupAcceptButton:Clone()
 PopupDeclineButton.Name = "PopupDeclineButton"
-PopupDeclineButton.Position = UDim2.new(0.5, 2, 1, -58)
+PopupDeclineButton.Position = UDim2_new(0.5, 2, 1, -58)
 PopupDeclineButton.Text = "Decline"
 PopupDeclineButton.Parent = PopupFrame
 
 local PopupOKButton = PopupAcceptButton:Clone()
 PopupOKButton.Name = "PopupOKButton"
-PopupOKButton.Position = UDim2.new(0.5, -50, 1, -58)
+PopupOKButton.Position = UDim2_new(0.5, -50, 1, -58)
 PopupOKButton.Text = "OK"
 PopupOKButton.Visible = false
 PopupOKButton.Parent = PopupFrame
 
 local PopupText = Instance.new('TextLabel')
 PopupText.Name = "PopupText"
-PopupText.Size = UDim2.new(1, -16, 0.8, 0)
-PopupText.Position = UDim2.new(0, 8, 0, 8)
+PopupText.Size = UDim2_new(1, -16, 0.8, 0)
+PopupText.Position = UDim2_new(0, 8, 0, 8)
 PopupText.BackgroundTransparency = 1
-PopupText.Font = Enum.Font.SourceSansBold
-PopupText.FontSize = Enum.FontSize.Size36
-PopupText.TextColor3 = Color3.new(0.97, 0.97, 0.97)
+PopupText.Font = Font.SourceSansBold
+PopupText.TextSize = 36
+PopupText.TextColor3 = RGB(247, 247, 247)
 PopupText.TextWrap = true
 PopupText.ZIndex = 5
-PopupText.TextYAlignment = Enum.TextYAlignment.Top
+PopupText.TextYAlignment = TextYAlignment.Top
 PopupText.Text = "This is a popup"
 PopupText.Parent = PopupFrame
 
@@ -223,7 +270,7 @@ local function getFriendImage(playerId)
 	if useNewUserThumbnailAPI then
 		-- SocialUtil.GetPlayerImage can yield for up to  MAX_GET_FRIEND_IMAGE_YIELD_TIME seconds while waiting for thumbnail to be final.
 		-- It will just return an invalid thumbnail if a valid one can not be generated in time.
-		return SocialUtil.GetPlayerImage(playerId, Enum.ThumbnailSize.Size48x48, Enum.ThumbnailType.HeadShot, --[[timeOut = ]] MAX_GET_FRIEND_IMAGE_YIELD_TIME)
+		return SocialUtil.GetPlayerImage(playerId, ThumbnailSize.Size48x48, ThumbnailType.HeadShot, --[[timeOut = ]] MAX_GET_FRIEND_IMAGE_YIELD_TIME)
 	else
 		return ("http://www.roblox.com/thumbs/avatar.ashx?userId=%d&x=%d&y=%d"):format(playerId, 48, 48)
 	end
@@ -232,7 +279,7 @@ end
 --
 local function createNotification(title, text, image)
 	local notificationFrame = DefaultNotification:Clone()
-	notificationFrame.Position = UDim2.new(1, 4, 1, -NOTIFICATION_Y_OFFSET - 4)
+	notificationFrame.Position = UDim2_new(1, 4, 1, -NOTIFICATION_Y_OFFSET - 4)
 	--
 	local notificationTitle = NotificationTitle:Clone()
 	notificationTitle.Text = title
@@ -246,10 +293,10 @@ local function createNotification(title, text, image)
 		if not notificationText.TextFits then
 			local textSize = TextService:GetTextSize(notificationText.Text, notificationText.TextSize, notificationText.Font, Vector2.new(notificationText.AbsoluteSize.X, 1000))
 			local addHeight = math.min(textSize.Y - notificationText.Size.Y.Offset, NOTIFICATION_TEXT_HEIGHT_MAX - notificationText.Size.Y.Offset)
-			notificationTitle.Position = notificationTitle.Position - UDim2.new(0, 0, 0, addHeight/2)
-			notificationText.Position = notificationText.Position - UDim2.new(0, 0, 0, addHeight/2)
-			notificationFrame.Size = notificationFrame.Size + UDim2.new(0, 0, 0, addHeight)
-			notificationText.Size = notificationText.Size + UDim2.new(0, 0, 0, addHeight)
+			notificationTitle.Position = notificationTitle.Position - UDim2_new(0, 0, 0, addHeight/2)
+			notificationText.Position = notificationText.Position - UDim2_new(0, 0, 0, addHeight/2)
+			notificationFrame.Size = notificationFrame.Size + UDim2_new(0, 0, 0, addHeight)
+			notificationText.Size = notificationText.Size + UDim2_new(0, 0, 0, addHeight)
 		end
 		notificationFrame.Parent = nil
 	end
@@ -258,52 +305,60 @@ local function createNotification(title, text, image)
 		local notificationImage = NotificationImage:Clone()
 		notificationImage.Image = image
 		notificationImage.Parent = notificationFrame
-
-		notificationTitle.Position = UDim2.new(0, (4.0/3.0) * IMAGE_SIZE, 0.5, -NOTIFICATION_TITLE_Y_OFFSET)
-		notificationTitle.TextXAlignment = Enum.TextXAlignment.Left
+		notificationTitle.Position = UDim2_new(0, 1.33333333 * IMAGE_SIZE, 0.5, -NOTIFICATION_TITLE_Y_OFFSET)
+	--	notificationTitle.Position = UDim2_new(0, (4.0/3.0) * IMAGE_SIZE, 0.5, -NOTIFICATION_TITLE_Y_OFFSET)
+		notificationTitle.TextXAlignment = TextXAlignment.Left
 
 		if FixBadgeTextBeingCutOff then
 			notificationFrame.Parent = NotificationFrame
-			notificationText.Size = UDim2.new(1, -IMAGE_SIZE - 16, 0, NOTIFICATION_TEXT_HEIGHT)
-			notificationText.Position = UDim2.new(0, (4.0/3.0) * IMAGE_SIZE, 0.5, NOTIFICATION_TEXT_Y_OFFSET)
-			notificationText.TextXAlignment = Enum.TextXAlignment.Left
+			notificationText.Size = UDim2_new(1, -IMAGE_SIZE - 16, 0, NOTIFICATION_TEXT_HEIGHT)
+			notificationText.Position = UDim2_new(0, 1.33333333 * IMAGE_SIZE, 0.5, NOTIFICATION_TEXT_Y_OFFSET)
+		--	notificationText.Position = UDim2_new(0, (4.0/3.0) * IMAGE_SIZE, 0.5, NOTIFICATION_TEXT_Y_OFFSET)
+			notificationText.TextXAlignment = TextXAlignment.Left
 			if not notificationText.TextFits then
 				local extraText = nil
 				local text = notificationText.Text
-				for i = string.len(text) - 1, 2, -1 do
-					if string.sub(text, i, i) == " " then
-						notificationText.Text = string.sub(text, 1, i - 1)
+				local tlen = #text
+			--	for i = string.len(text) - 1, 2, -1 do
+				for i = tlen - 1, 2, -1 do
+				--	if string.sub(text, i, i) == " " then
+					if text:sub(i, i) == " " then
+						notificationText.Text = text:sub(1, i - 1)
+					--	notificationText.Text = string.sub(text, 1, i - 1)
 						if notificationText.TextFits then
-							extraText = string.sub(text, i + 1)
+							extraText = text:sub(i + 1)
+							--extraText = string.sub(text, i + 1)
 							break
 						end
 					end
 				end
 				if extraText then
 					local notificationText2 = NotificationText:Clone()
-					notificationText2.TextXAlignment = Enum.TextXAlignment.Left
+					notificationText2.TextXAlignment = TextXAlignment.Left
 					notificationText2.Text = extraText
 					notificationText2.Name = "ExtraText"
 					notificationText2.Parent = notificationFrame
+					local textSize = TextService:GetTextSize(extraText, notificationText2.TextSize, notificationText2.Font, Vector2_new(notificationText2.AbsoluteSize.X, 1000))
+					local addHeight = min(textSize.Y, NOTIFICATION_TEXT_HEIGHT_MAX - notificationText.Size.Y.Offset)
+					notificationTitle.Position = notificationTitle.Position - UDim2_new(0, 0, 0, addHeight * 0.5)
+					notificationText.Position = notificationText.Position - UDim2_new(0, 0, 0, addHeight * 0.5)
+				--	notificationTitle.Position = notificationTitle.Position - UDim2_new(0, 0, 0, addHeight/2)
+				--	notificationText.Position = notificationText.Position - UDim2_new(0, 0, 0, addHeight/2)
+					notificationFrame.Size = notificationFrame.Size + UDim2_new(0, 0, 0, addHeight)
 
-					local textSize = TextService:GetTextSize(extraText, notificationText2.TextSize, notificationText2.Font, Vector2.new(notificationText2.AbsoluteSize.X, 1000))
-					local addHeight = math.min(textSize.Y, NOTIFICATION_TEXT_HEIGHT_MAX - notificationText.Size.Y.Offset)
-					notificationTitle.Position = notificationTitle.Position - UDim2.new(0, 0, 0, addHeight/2)
-					notificationText.Position = notificationText.Position - UDim2.new(0, 0, 0, addHeight/2)
-					notificationFrame.Size = notificationFrame.Size + UDim2.new(0, 0, 0, addHeight)
-
-					notificationText2.Size = UDim2.new(notificationText2.Size.X.Scale, notificationText2.Size.X.Offset, 0, addHeight)
-					notificationText2.AnchorPoint = Vector2.new(0.5, 0)
-					notificationText2.Position = UDim2.new(0.5, 0, notificationText.Position.Y.Scale, notificationText.Position.Y.Offset + notificationText.AbsoluteSize.Y)
+					notificationText2.Size = UDim2_new(notificationText2.Size.X.Scale, notificationText2.Size.X.Offset, 0, addHeight)
+					notificationText2.AnchorPoint = Vector2_new(0.5, 0)
+					notificationText2.Position = UDim2_new(0.5, 0, notificationText.Position.Y.Scale, notificationText.Position.Y.Offset + notificationText.AbsoluteSize.Y)
 				else
 					notificationText.Text = text
 				end
 			end
 			notificationFrame.Parent = nil
 		else
-			notificationText.Size = UDim2.new(1, -IMAGE_SIZE - 16, 0, NOTIFICATION_TEXT_HEIGHT)
-			notificationText.Position = UDim2.new(0, (4.0/3.0) * IMAGE_SIZE, 0.5, NOTIFICATION_TEXT_Y_OFFSET)
-			notificationText.TextXAlignment = Enum.TextXAlignment.Left
+			notificationText.Size = UDim2_new(1, -IMAGE_SIZE - 16, 0, NOTIFICATION_TEXT_HEIGHT)
+			notificationText.Position = UDim2_new(0, 1.33333333 * IMAGE_SIZE, 0.5, NOTIFICATION_TEXT_Y_OFFSET)
+		--	notificationText.Position = UDim2_new(0, (4.0/3.0) * IMAGE_SIZE, 0.5, NOTIFICATION_TEXT_Y_OFFSET)
+			notificationText.TextXAlignment = TextXAlignment.Left
 		end
 	end
 
@@ -334,7 +389,7 @@ local function updateNotifications()
 					thisOffset = currentNotification.IsFriend and frame.Size.Y.Offset + ((NOTIFICATION_Y_OFFSET + 2) * 0.5) or frame.Size.Y.Offset
 				end
 				yOffset = yOffset + thisOffset
-				frame:TweenPosition(UDim2.new(0, 0, 1, -yOffset - (pos * 4)), EASE_DIR, EASE_STYLE, TWEEN_TIME, true,
+				frame:TweenPosition(UDim2_new(0, 0, 1, -yOffset - (pos * 4)), EASE_DIR, EASE_STYLE, TWEEN_TIME, true,
 					function()
 						if currentNotification.TweenOutCallback then
 							currentNotification.TweenOutCallback()
@@ -392,7 +447,7 @@ removeNotification = function(notification)
 	if not notification then return end
 	--
 	local index = findNotification(notification)
-	table.remove(NotificationQueue, index)
+	remove(NotificationQueue, index)
 	local frame = notification.Frame
 	if frame and frame.Parent then
 		notification.IsActive = false
@@ -401,7 +456,7 @@ removeNotification = function(notification)
 
 			-- Tween out now, or set up to tween out immediately after current tween is finished, but don't interrupt.
 			local function doTweenOut()
-				return frame:TweenPosition(UDim2.new(1, 0, 1, frame.Position.Y.Offset), EASE_DIR, EASE_STYLE, TWEEN_TIME, false,
+				return frame:TweenPosition(UDim2_new(1, 0, 1, frame.Position.Y.Offset), EASE_DIR, EASE_STYLE, TWEEN_TIME, false,
 				function()
 					frame:Destroy()
 					notification = nil
@@ -416,7 +471,7 @@ removeNotification = function(notification)
 	end
 	if #OverflowQueue > 0 then
 		local nextNotification = OverflowQueue[1]
-		table.remove(OverflowQueue, 1)
+		remove(OverflowQueue, 1)
 
 		insertNotification(nextNotification)
 
@@ -459,19 +514,19 @@ local function onSendNotification(title, text, image, duration, callback, button
 		return
 	end
 
-	local notification = {}
+	local notification = { }
 	local notificationFrame = createNotification(title, text, image)
 	--
 
 	local button1 = nil
 	if button1Text and button1Text ~= "" then
 		notification.IsFriend = true -- Prevents other notifications overlapping the buttons
-		button1 = createTextButton("Button1", button1Text, UDim2.new(0, 0, 1, 2))
+		button1 = createTextButton("Button1", button1Text, UDim2_new(0, 0, 1, 2))
 		button1.Parent = notificationFrame
 		local button1ClickedConnection = nil
-		button1ClickedConnection = button1.MouseButton1Click:connect(function()
+		button1ClickedConnection = button1.MouseButton1Click:Connect(function()
 			if button1ClickedConnection then
-				button1ClickedConnection:disconnect()
+				button1ClickedConnection:Disconnect()
 				button1ClickedConnection = nil
 				removeNotification(notification)
 				if callback and type(callback) ~= "function" then -- callback should be a bindable
@@ -485,12 +540,12 @@ local function onSendNotification(title, text, image, duration, callback, button
 
 	if button2Text and button2Text ~= "" then
 		notification.IsFriend = true
-		local button2 = createTextButton("Button1", button2Text, UDim2.new(0.5, 2, 1, 2))
+		local button2 = createTextButton("Button1", button2Text, UDim2_new(0.5, 2, 1, 2))
 		button2.Parent = notificationFrame
 		local button2ClickedConnection = nil
-		button2ClickedConnection = button2.MouseButton1Click:connect(function()
+		button2ClickedConnection = button2.MouseButton1Click:Connect(function()
 			if button2ClickedConnection then
-				button2ClickedConnection:disconnect()
+				button2ClickedConnection:Disconnect()
 				button2ClickedConnection = nil
 				removeNotification(notification)
 				if callback and type(callback) ~= "function" then -- callback should be a bindable
@@ -501,9 +556,9 @@ local function onSendNotification(title, text, image, duration, callback, button
 			end
 		end)
 	else
-		-- Resize button1 to take up all the space under the notification if button2 doesn't exist
+		-- Resize button1 to take up all the space u0nder the notification if button2 doesn't exist
 		if button1 then
-			button1.Size = UDim2.new(1, -2, .5, 0)
+			button1.Size = UDim2_new(1, -2, .5, 0)
 		end
 	end
 
@@ -511,7 +566,7 @@ local function onSendNotification(title, text, image, duration, callback, button
 	notification.Duration = duration
 	insertNotification(notification)
 end
-BindableEvent_SendNotification.Event:connect(onSendNotification)
+BindableEvent_SendNotification.Event:Connect(onSendNotification)
 
 local function onSendNotificationInfo(notificationInfo)
 	if UserInputService.VREnabled then
@@ -525,7 +580,7 @@ local function onSendNotificationInfo(notificationInfo)
 	--into a parameter list here. One option in the future is to update the code that produces the notification in non-VR to use notificationInfo table.
 	onSendNotification(notificationInfo.Title, notificationInfo.Text, notificationInfo.Image, notificationInfo.Duration, notificationInfo.Callback, notificationInfo.Button1Text, notificationInfo.Button2Text)
 end
-BindableEvent_SendNotificationInfo.Event:connect(onSendNotificationInfo)
+BindableEvent_SendNotificationInfo.Event:Connect(onSendNotificationInfo)
 
 -- New follower notification
 spawn(function()
@@ -537,11 +592,14 @@ spawn(function()
 	local RobloxReplicatedStorage = game:GetService('RobloxReplicatedStorage')
 	local RemoteEvent_NewFollower = RobloxReplicatedStorage:WaitForChild('NewFollower', 86400) or RobloxReplicatedStorage:WaitForChild('NewFollower')
 	--
-	RemoteEvent_NewFollower.OnClientEvent:connect(function(followerRbxPlayer)
+	RemoteEvent_NewFollower.OnClientEvent:Connect(function(followerRbxPlayer)
 		if newNotificationPath then
-			local message = ("%s is now following you"):format(followerRbxPlayer.Name)
+			local msg = "%s is now following you."
+			local message = msg:format(followerRbxPlayer.Name)
+		--	local message = ("%s is now following you"):format(followerRbxPlayer.Name) <- this was fine, just felt like changing it slightly.
 			if FFlagUseNotificationsLocalization then
-				message = string.gsub(LocalizedGetString("NotificationScript2.NewFollower",message),"{RBX_NAME}",followerRbxPlayer.Name)
+				message = (LocalizedGetString("NotificationScript2.NewFollower", message)):gsub("{RBX_NAME}", followerRbxPlayer.Name)
+			--	message = string.gsub(LocalizedGetString("NotificationScript2.NewFollower",message),"{RBX_NAME}",followerRbxPlayer.Name)
 			end
 			local image = getFriendImage(followerRbxPlayer.UserId)
 			sendNotificationInfo {
@@ -553,14 +611,14 @@ spawn(function()
 				Duration = 5
 			}
 		else
-			sendNotification("New Follower", followerRbxPlayer.Name.." is now following you!",
-				FRIEND_IMAGE..followerRbxPlayer.UserId.."&x=48&y=48", 5, function() end)
+			sendNotification("New Follower", followerRbxPlayer.Name .. " is now following you!",
+				FRIEND_IMAGE..followerRbxPlayer.UserId .. "&x=48&y=48", 5, function() end)
 		end
 	end)
 end)
 
 local checkFriendRequestIsThrottled; do
-	local friendRequestThrottlingMap = {}
+	local friendRequestThrottlingMap = { }
 
 	checkFriendRequestIsThrottled = function(fromPlayer)
 		local throttleFinishedTime = friendRequestThrottlingMap[fromPlayer]
@@ -604,18 +662,18 @@ local function sendFriendNotification(fromPlayer)
 			Button2Text = declineText
 		}
 	else
-		local notification = {}
+		local notification = { }
 		local notificationFrame = createNotification(fromPlayer.Name, "Sent you a friend request!",
-			FRIEND_IMAGE..tostring(fromPlayer.UserId).."&x=48&y=48")
-		notificationFrame.Position = UDim2.new(1, 4, 1, -(NOTIFICATION_Y_OFFSET + 2) * 1.5 - 4)
+			FRIEND_IMAGE .. tostring(fromPlayer.UserId) .. "&x=48&y=48")
+		notificationFrame.Position = UDim2_new(1, 4, 1, -(NOTIFICATION_Y_OFFSET + 2) * 1.5 - 4)
 		--
-		local acceptButton = createTextButton("AcceptButton", "Accept", UDim2.new(0, 0, 1, 2))
+		local acceptButton = createTextButton("AcceptButton", "Accept", UDim2_new(0, 0, 1, 2))
 		acceptButton.Parent = notificationFrame
 
-		local declineButton = createTextButton("DeclineButton", "Decline", UDim2.new(0.5, 2, 1, 2))
+		local declineButton = createTextButton("DeclineButton", "Decline", UDim2_new(0.5, 2, 1, 2))
 		declineButton.Parent = notificationFrame
 
-		acceptButton.MouseButton1Click:connect(function()
+		acceptButton.MouseButton1Click:Connect(function()
 			if not notification.IsActive then return end
 			if notification then
 				removeNotification(notification)
@@ -623,7 +681,7 @@ local function sendFriendNotification(fromPlayer)
 			LocalPlayer:RequestFriendship(fromPlayer)
 		end)
 
-		declineButton.MouseButton1Click:connect(function()
+		declineButton.MouseButton1Click:Connect(function()
 			if not notification.IsActive then return end
 			if notification then
 				removeNotification(notification)
@@ -644,11 +702,12 @@ local function onFriendRequestEvent(fromPlayer, toPlayer, event)
 	if fromPlayer ~= LocalPlayer and toPlayer ~= LocalPlayer then return end
 	--
 	if fromPlayer == LocalPlayer then
-		if event == Enum.FriendRequestEvent.Accept then
+		if event == FriendRequestEvent.Accept then
 			if newNotificationPath then
 				local detailText = "You are now friends with " .. toPlayer.Name .. "!"
 				if FFlagUseNotificationsLocalization then
-					detailText = string.gsub(LocalizedGetString("NotificationScript2.FriendRequestEvent.Accept",detailText), "{RBX_NAME}", toPlayer.Name)
+					detailText = (LocalizedGetString("NotificationScript2.FriendRequestEvent.Accept", detailText)):gsub("{RBX_NAME}", toPlayer.Name)
+				--	detailText = string.gsub(LocalizedGetString("NotificationScript2.FriendRequestEvent.Accept",detailText), "{RBX_NAME}", toPlayer.Name)
 				end
 
 				sendNotificationInfo {
@@ -661,19 +720,20 @@ local function onFriendRequestEvent(fromPlayer, toPlayer, event)
 					Duration = DEFAULT_NOTIFICATION_DURATION
 				}
 			else
-				sendNotification("New Friend", "You are now friends with "..toPlayer.Name.."!",
-					FRIEND_IMAGE..tostring(toPlayer.UserId).."&x=48&y=48", DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "Friends")
+				sendNotification("New Friend", "You are now friends with " .. toPlayer.Name .. "!",
+					FRIEND_IMAGE .. tostring(toPlayer.UserId) .. "&x=48&y=48", DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "Friends")
 			end
 		end
 	elseif toPlayer == LocalPlayer then
-		if event == Enum.FriendRequestEvent.Issue then
+		if event == FriendRequestEvent.Issue then
 			if FriendRequestBlacklist[fromPlayer] then return end
 			sendFriendNotification(fromPlayer)
-		elseif event == Enum.FriendRequestEvent.Accept then
+		elseif event == FriendRequestEvent.Accept then
 			if newNotificationPath then
 				local detailText = "You are now friends with " .. fromPlayer.Name .. "!"
 				if FFlagUseNotificationsLocalization then
-					detailText = string.gsub(LocalizedGetString("NotificationScript2.FriendRequestEvent.Accept",detailText), "{RBX_NAME}", fromPlayer.Name)
+					detailText = (LocalizedGetString("NotificationScript2.FriendRequestEvent.Accept", detailText)):gsub("{RBX_NAME}", fromPlayer.Name)
+				--	detailText = string.gsub(LocalizedGetString("NotificationScript2.FriendRequestEvent.Accept", detailText), "{RBX_NAME}", fromPlayer.Name)
 				end
 				sendNotificationInfo {
 					GroupName = "Friends",
@@ -685,8 +745,8 @@ local function onFriendRequestEvent(fromPlayer, toPlayer, event)
 					Duration = DEFAULT_NOTIFICATION_DURATION
 				}
 			else
-				sendNotification("New Friend", "You are now friends with "..fromPlayer.Name.."!",
-					FRIEND_IMAGE..tostring(fromPlayer.UserId).."&x=48&y=48", DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "Friends")
+				sendNotification("New Friend", "You are now friends with " .. fromPlayer.Name .. "!",
+					FRIEND_IMAGE .. tostring(fromPlayer.UserId) .. "&x=48&y=48", DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "Friends")
 			end
 		end
 	end
@@ -701,19 +761,26 @@ local function onPointsAwarded(userId, pointsAwarded, userBalanceInGame, userTot
 				title = "Point Awarded"
 				text = "You received 1 point!"
 				if FFlagUseNotificationsLocalization then
-					text = string.gsub(LocalizedGetString("NotificationScript2.onPointsAwarded.single",text),"{RBX_NUMBER}",pointsAwarded)
+					text = (LocalizedGetString("NotificationScript2.onPointsAwarded.single", text)):gsub("{RBX_NUMBER}", pointsAwarded)
+				--	text = string.gsub(LocalizedGetString("NotificationScript2.onPointsAwarded.single", text), "{RBX_NUMBER}", pointsAwarded)
 				end
 			elseif pointsAwarded > 0 then
 				title = "Points Awarded"
-				text = ("You received %d points!"):format(pointsAwarded)
+				local txt = "You received %d points!"
+				text = txt:format(pointsAwarded)
+			--	text = ("You received %d points!"):format(pointsAwarded)
 				if FFlagUseNotificationsLocalization then
-					text = string.gsub(LocalizedGetString("NotificationScript2.onPointsAwarded.multiple",text),"{RBX_NUMBER}",pointsAwarded)
+					text = (LocalizedGetString("NotificationScript2.onPointsAwarded.multiple", text)):gsub("{RBX_NUMBER}", pointsAwarded)
+				--	text = string.gsub(LocalizedGetString("NotificationScript2.onPointsAwarded.multiple", text), "{RBX_NUMBER}", pointsAwarded)
 				end
 			elseif pointsAwarded < 0 then
 				title = "Points Lost"
-				text = ("You lost %d points!"):format(math.abs(pointsAwarded))
+				local txt = "You lost %d points!"
+				text = txt:format(abs(pointsAwarded))
+			--	text = ("You lost %d points!"):format(math.abs(pointsAwarded))
 				if FFlagUseNotificationsLocalization then
-					text = string.gsub(LocalizedGetString("NotificationScript2.onPointsAwarded.negative",text),"{RBX_NUMBER}",math.abs(pointsAwarded))
+					text = (LocalizedGetString("NotificationScript2.onPointsAwarded.negative", text)):gsub("{RBX_NUMBER}", abs(pointsAwarded))
+				--	text = string.gsub(LocalizedGetString("NotificationScript2.onPointsAwarded.negative",text),"{RBX_NUMBER}",math.abs(pointsAwarded))
 				end
 			else
 				--don't notify for 0 points, shouldn't even happen
@@ -733,11 +800,11 @@ local function onPointsAwarded(userId, pointsAwarded, userBalanceInGame, userTot
 	else
 		if pointsNotificationsActive and userId == LocalPlayer.UserId then
 			if pointsAwarded == 1 then
-				sendNotification("Point Awarded", "You received "..tostring(pointsAwarded).." point!", PLAYER_POINTS_IMG, DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "PlayerPoints")
+				sendNotification("Point Awarded", "You received " .. tostring(pointsAwarded) .. " point!", PLAYER_POINTS_IMG, DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "PlayerPoints")
 			elseif pointsAwarded > 0 then
-				sendNotification("Points Awarded", "You received "..tostring(pointsAwarded).." points!", PLAYER_POINTS_IMG, DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "PlayerPoints")
+				sendNotification("Points Awarded", "You received " .. tostring(pointsAwarded) .. " points!", PLAYER_POINTS_IMG, DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "PlayerPoints")
 			elseif pointsAwarded < 0 then
-				sendNotification("Points Lost", "You lost "..tostring(-pointsAwarded).." points!", PLAYER_POINTS_IMG, DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "PlayerPoints")
+				sendNotification("Points Lost", "You lost " .. tostring(-pointsAwarded) .. " points!", PLAYER_POINTS_IMG, DEFAULT_NOTIFICATION_DURATION, nil, nil, nil, "PlayerPoints")
 			end
 		end
 	end
@@ -773,15 +840,19 @@ function onGameSettingsChanged(property, amount)
 			level = 1
 		end
 		-- value of 0 is automatic, we do not want to send a notification in that case
-		if level > 0 and level ~= CurrentGraphicsQualityLevel and GameSettings.SavedQualityLevel ~= Enum.SavedQualitySetting.Automatic then
+		if level > 0 and level ~= CurrentGraphicsQualityLevel and GameSettings.SavedQualityLevel ~= SavedQualitySetting.Automatic then
 			local action = (level > CurrentGraphicsQualityLevel) and "Increased" or "Decreased"
-			local message = ("%s to (%d)"):format(action, level)
+			local msg = "%s to (%d)"
+			local message = msg:format(action, level)
+		--	local message = ("%s to (%d)"):format(action, level)
 
 			if FFlagUseNotificationsLocalization then
 				if level > CurrentGraphicsQualityLevel then
-					message = string.gsub(LocalizedGetString("NotificationScrip2.onCurrentGraphicsQualityLevelChanged.Increased",message),"{RBX_NUMBER}",tostring(level))
+					message = (LocalizedGetString("NotificationScrip2.onCurrentGraphicsQualityLevelChanged.Increased", message)):gsub("{RBX_NUMBER}", tostring(level))
+				--	message = string.gsub(LocalizedGetString("NotificationScrip2.onCurrentGraphicsQualityLevelChanged.Increased", message),"{RBX_NUMBER}",tostring(level))
 				else
-					message = string.gsub(LocalizedGetString("NotificationScrip2.onCurrentGraphicsQualityLevelChanged.Decreased",message),"{RBX_NUMBER}",tostring(level))
+					message = (LocalizedGetString("NotificationScrip2.onCurrentGraphicsQualityLevelChanged.Decreased", message)):gsub("{RBX_NUMBER}", tostring(level))
+				--	message = string.gsub(LocalizedGetString("NotificationScrip2.onCurrentGraphicsQualityLevelChanged.Decreased",message),"{RBX_NUMBER}",tostring(level))
 				end
 			end
 
@@ -804,12 +875,12 @@ end
 
 --[[ Connections ]]--
 
-BadgeService.BadgeAwarded:connect(onBadgeAwarded)
+BadgeService.BadgeAwarded:Connect(onBadgeAwarded)
 if not isTenFootInterface then
-	Players.FriendRequestEvent:connect(onFriendRequestEvent)
-	PointsService.PointsAwarded:connect(onPointsAwarded)
+	Players.FriendRequestEvent:Connect(onFriendRequestEvent)
+	PointsService.PointsAwarded:Connect(onPointsAwarded)
 	--GameSettings.Changed:connect(onGameSettingsChanged)
-	game.GraphicsQualityChangeRequest:connect(function(graphicsIncrease) --graphicsIncrease is a boolean
+	game.GraphicsQualityChangeRequest:Connect(function(graphicsIncrease) --graphicsIncrease is a boolean
 		onGameSettingsChanged("SavedQualityLevel", graphicsIncrease == true and 1 or -1)
 	end)
 end
@@ -846,13 +917,15 @@ end)
 
 GuiService.SendCoreUiNotification = function(title, text)
 	local notification = createNotification(title, text, "")
-	notification.BackgroundTransparency = .5
-	notification.Size = UDim2.new(.5, 0, .1, 0)
-	notification.Position = UDim2.new(.25, 0, -0.1, 0)
-	notification.NotificationTitle.FontSize = Enum.FontSize.Size36
-	notification.NotificationText.FontSize = Enum.FontSize.Size24
+	notification.BackgroundTransparency = 0.5
+	notification.Size = UDim2_new(0.5, 0, 0.1, 0)
+	notification.Position = UDim2_new(0.25, 0, -0.1, 0)
+	notification.NotificationTitle.TextSize = 36
+	notification.NotificationText.TextSize = 24
+--	notification.NotificationTitle.FontSize = Enum.FontSize.Size36
+--	notification.NotificationText.FontSize = Enum.FontSize.Size24
 	notification.Parent = RbxGui
-	notification:TweenPosition(UDim2.new(.25, 0, 0, 0), EASE_DIR, EASE_STYLE, TWEEN_TIME, true)
+	notification:TweenPosition(UDim2_new(0.25, 0, 0, 0), EASE_DIR, EASE_STYLE, TWEEN_TIME, true)
 	wait(5)
 	if notification then
 		notification:Destroy()
@@ -866,25 +939,25 @@ local function onClientLuaDialogRequested(msg, accept, decline)
 	--
 	local acceptCn, declineCn = nil, nil
 	local function disconnectCns()
-		if acceptCn then acceptCn:disconnect() end
-		if declineCn then declineCn:disconnect() end
+		if acceptCn then acceptCn:Disconnect() end
+		if declineCn then declineCn:Disconnect() end
 		--
 		GuiService:RemoveCenterDialog(PopupFrame)
 		PopupFrame.Visible = false
 	end
 
-	acceptCn = PopupAcceptButton.MouseButton1Click:connect(function()
+	acceptCn = PopupAcceptButton.MouseButton1Click:Connect(function()
 		disconnectCns()
 		MarketplaceService:SignalServerLuaDialogClosed(true)
 	end)
-	declineCn = PopupDeclineButton.MouseButton1Click:connect(function()
+	declineCn = PopupDeclineButton.MouseButton1Click:Connect(function()
 		disconnectCns()
 		MarketplaceService:SignalServerLuaDialogClosed(false)
 	end)
 
 	local centerDialogSuccess = pcall(
 		function()
-			GuiService:AddCenterDialog(PopupFrame, Enum.CenterDialogType.QuitDialog,
+			GuiService:AddCenterDialog(PopupFrame, CenterDialogType.QuitDialog,
 				function()
 					PopupOKButton.Visible = false
 					PopupAcceptButton.Visible = true
@@ -906,7 +979,7 @@ local function onClientLuaDialogRequested(msg, accept, decline)
 
 	return true
 end
-MarketplaceService.ClientLuaDialogRequested:connect(onClientLuaDialogRequested)
+MarketplaceService.ClientLuaDialogRequested:Connect(onClientLuaDialogRequested)
 
 --[[ Developer customization API ]]--
 local function createDeveloperNotification(notificationTable)
@@ -953,7 +1026,7 @@ if not isTenFootInterface then
 	end
 
 	local leaveNotificationFunc = function(name, state, inputObject)
-		if state ~= Enum.UserInputState.Begin then return end
+		if state ~= UserInputState.Begin then return end
 
 		if GuiService.SelectedCoreObject:IsDescendantOf(NotificationFrame) then
 			GuiService.SelectedCoreObject = nil
@@ -962,7 +1035,7 @@ if not isTenFootInterface then
 		ContextActionService:UnbindCoreAction("LeaveNotificationSelection")
 	end
 
-	gamepadNotifications.Event:connect(function(isSelected)
+	gamepadNotifications.Event:Connect(function(isSelected)
 		if not isSelected then return end
 
 		isPaused = true
@@ -978,7 +1051,7 @@ if not isTenFootInterface then
 		end
 
 		if GuiService.SelectedCoreObject then
-			ContextActionService:BindCoreAction("LeaveNotificationSelection", leaveNotificationFunc, false, Enum.KeyCode.ButtonB)
+			ContextActionService:BindCoreAction("LeaveNotificationSelection", leaveNotificationFunc, false, KeyCode.ButtonB)
 		else
 			isPaused = false
 			local utility = require(RobloxGui.Modules.Settings.Utility)
@@ -987,7 +1060,7 @@ if not isTenFootInterface then
 		end
 	end)
 
-	GuiService.Changed:connect(function(prop)
+	GuiService.Changed:Connect(function(prop)
 		if prop == "SelectedCoreObject" then
 			if not GuiService.SelectedCoreObject or not GuiService.SelectedCoreObject:IsDescendantOf(NotificationFrame) then
 				isPaused = false
@@ -1007,7 +1080,7 @@ if Modules and not CSMModule then
 	end
 end
 
-if Platform == Enum.Platform.XBoxOne then
+if Platform == Platform.XBoxOne then
 	-- Platform hook for controller connection events
 	-- Displays overlay to user on controller connection lost
 	local PlatformService = nil
@@ -1018,7 +1091,7 @@ if Platform == Enum.Platform.XBoxOne then
 			controllerStateManager:Initialize()
 
 			if not game:IsLoaded() then
-				game.Loaded:wait()
+				game.Loaded:Wait()
 			end
 
 			-- retro check in case of controller disconnect while loading

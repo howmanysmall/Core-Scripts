@@ -3,7 +3,46 @@
 	// Written by: SolarCrane
 	// Description: Code for lua side Top Menu items in ROBLOX.
 ]]
-
+local game = game
+local spawn = spawn
+local wait = wait
+local tick = tick
+local print = print
+local pcall = pcall
+local require = require
+local type = type
+local pairs, ipairs = pairs, ipairs
+local setmetatable = setmetatable
+local rawset = rawset
+local tostring = tostring
+--@*.new stuff
+local Instance = Instance local Instance_new = Instance.new
+local UDim2 = UDim2 local UDim2_new = UDim2.new
+local Vector2 = Vector2 local Vector2_new = Vector2.new
+local Vector3 = Vector3 local Vector3_new = Vector3.new
+local Color3 = Color3 local Color3_new = Color3.new local RGB = Color3.fromRGB
+--@enums, math, tables
+local math = math
+	local max, min = math.max, math.min
+local Enum = Enum
+	local Font = Enum.Font
+	local FriendStatus = Enum.FriendStatus
+	local TextXAlignment, TextYAlignment = Enum.TextXAlignment, Enum.TextYAlignment
+	local EasingDirection, EasingStyle = Enum.EasingDirection, Enum.EasingStyle
+	local Platform = Enum.Platform
+	local CoreGuiType = Enum.CoreGuiType
+local table = table
+	local insert = insert
+	local function remove(tbl, index)
+		if type(index) == "number" then
+			tbl[index] = nil
+			local tlen = #tbl
+			for i = index + 1, tlen do
+				tbl[i - 1] = tbl[i]
+			end
+			tbl[tlen] = nil
+		end
+	end
 --[[ FFLAG VALUES ]]
 
 local getNewNotificationPathSuccess, newNotificationPathValue = pcall(function() return settings():GetFFlag("UseNewNotificationPathLua") end)
@@ -17,33 +56,33 @@ local enablePortraitMode = enablePortraitModeSuccess and enablePortraitModeValue
 
 --[[ SERVICES ]]
 
-local CoreGuiService = game:GetService('CoreGui')
-local PlayersService = game:GetService('Players')
-local GuiService = game:GetService('GuiService')
-local InputService = game:GetService('UserInputService')
-local StarterGui = game:GetService('StarterGui')
+local CoreGuiService = game:GetService("CoreGui")
+local PlayersService = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
+local InputService = game:GetService("UserInputService")
+local StarterGui = game:GetService("StarterGui")
 local ContextActionService = game:GetService("ContextActionService")
-local RunService = game:GetService('RunService')
-local TextService = game:GetService('TextService')
-local ChatService = game:GetService('Chat')
-local VRService = game:GetService('VRService')
+local RunService = game:GetService("RunService")
+local TextService = game:GetService("TextService")
+local ChatService = game:GetService("Chat")
+local VRService = game:GetService("VRService")
 
 --[[ END OF SERVICES ]]
 
 --[[ MODULES ]]--
-local GuiRoot = CoreGuiService:WaitForChild('RobloxGui')
+local GuiRoot = CoreGuiService:WaitForChild("RobloxGui")
 local TopbarConstants = require(GuiRoot.Modules.TopbarConstants)
 local Utility = require(GuiRoot.Modules.Settings.Utility)
 --[[ END OF MODULES ]]
 
 local topbarEnabled = true
-local topbarEnabledChangedEvent = Instance.new('BindableEvent')
+local topbarEnabledChangedEvent = Instance_new("BindableEvent")
 
 local function isTopbarEnabled()
 	return topbarEnabled and not VRService.VREnabled
 end
 
-StarterGui:RegisterSetCore("TopbarEnabled", function(enabled) -- registers a placeholder setcore function that keeps track of players enabling/disabling the topbar before it's ready.
+StarterGui:RegisterSetCore("TopbarEnabled", function(enabled) -- registers a placeholder setcore function that keeps track of players enabling/disabling the topbar before it"s ready.
 	if type(enabled) == "boolean" then
 		topbarEnabled = enabled
 	end
@@ -54,7 +93,7 @@ local settingsActive = false
 local GameSettings = UserSettings().GameSettings
 local Player = PlayersService.LocalPlayer
 while not Player do
-	PlayersService.ChildAdded:wait()
+	PlayersService.ChildAdded:Wait()
 	Player = PlayersService.LocalPlayer
 end
 
@@ -75,8 +114,7 @@ end
 local TenFootInterface = require(GuiRoot.Modules.TenFootInterface)
 local isTenFootInterface = TenFootInterface:IsEnabled()
 
-local Util = {}
-do
+local Util = { } do
 	-- Check if we are running on a touch device
 	function Util.IsTouchDevice()
 		return InputService.TouchEnabled
@@ -89,9 +127,9 @@ do
 
 	function Util.Create(instanceType)
 		return function(data)
-			local obj = Instance.new(instanceType)
+			local obj = Instance_new(instanceType)
 			for k, v in pairs(data) do
-				if type(k) == 'number' then
+				if type(k) == "number" then
 					v.Parent = obj
 				else
 					obj[k] = v
@@ -102,12 +140,12 @@ do
 	end
 
 	function Util.Clamp(low, high, input)
-		return math.max(low, math.min(high, input))
+		return max(low, min(high, input))
 	end
 
 	function Util.DisconnectEvent(conn)
 		if conn then
-			conn:disconnect()
+			conn:Disconnect()
 		end
 		return nil
 	end
@@ -119,7 +157,7 @@ do
 		end
 	end
 
-	local humanoidCache = {}
+	local humanoidCache = { }
 	function Util.FindPlayerHumanoid(player)
 		local character = player and player.Character
 		if character then
@@ -129,7 +167,7 @@ do
 			else
 				humanoidCache[player] = nil -- Bust Old Cache
 				for _, child in pairs(character:GetChildren()) do
-					if child:IsA('Humanoid') then
+					if child:IsA("Humanoid") then
 						humanoidCache[player] = child
 						return child
 					end
@@ -140,38 +178,38 @@ do
 end
 
 local function CreateTopBar()
-	local this = {}
+	local this = { }
 
 	local playerGuiChangedConn = nil
 
-	local topbarContainer = Util.Create'Frame'{
-		Name = "TopBarContainer";
-		Size = UDim2.new(1, 0, 0, TopbarConstants.TOPBAR_THICKNESS);
-		Position = UDim2.new(0, 0, 0, -TopbarConstants.TOPBAR_THICKNESS);
-		BackgroundTransparency = TopbarConstants.TOPBAR_OPAQUE_TRANSPARENCY;
-		BackgroundColor3 = TopbarConstants.TOPBAR_BACKGROUND_COLOR;
-		BorderSizePixel = 0;
-		Active = true;
-		Parent = GuiRoot;
-	};
+	local topbarContainer = Util.Create"Frame"{
+		Name = "TopBarContainer",
+		Size = UDim2_new(1, 0, 0, TopbarConstants.TOPBAR_THICKNESS),
+		Position = UDim2_new(0, 0, 0, -TopbarConstants.TOPBAR_THICKNESS),
+		BackgroundTransparency = TopbarConstants.TOPBAR_OPAQUE_TRANSPARENCY,
+		BackgroundColor3 = TopbarConstants.TOPBAR_BACKGROUND_COLOR,
+		BorderSizePixel = 0,
+		Active = true,
+		Parent = GuiRoot
+	}
 
-	local topbarShadow = Util.Create'ImageLabel'{
-		Name = "TopBarShadow";
-		Size = UDim2.new(1, 0, 0, 3);
-		Position = UDim2.new(0, 0, 1, 0);
-		Image = "rbxasset://textures/ui/TopBar/dropshadow.png";
-		BackgroundTransparency = 1;
-		Active = false;
-		Visible = false;
-		Parent = topbarContainer;
-	};
+	local topbarShadow = Util.Create"ImageLabel"{
+		Name = "TopBarShadow",
+		Size = UDim2_new(1, 0, 0, 3),
+		Position = UDim2_new(0, 0, 1, 0),
+		Image = "rbxasset://textures/ui/TopBar/dropshadow.png",
+		BackgroundTransparency = 1,
+		Active = false,
+		Visible = false,
+		Parent = topbarContainer
+	}
 
 	local function ComputeTransparency()
 		if not isTopbarEnabled() then
 			return 1
 		end
 
-		local playerGui = Player:FindFirstChild('PlayerGui')
+		local playerGui = Player:FindFirstChild("PlayerGui")
 		if playerGui then
 			return playerGui:GetTopbarTransparency()
 		end
@@ -195,10 +233,10 @@ local function CreateTopBar()
 	end
 
 	spawn(function()
-		local playerGui = Player:WaitForChild('PlayerGui', 86400) or Player:WaitForChild('PlayerGui')
+		local playerGui = Player:WaitForChild("PlayerGui", 86400) or Player:WaitForChild("PlayerGui")
 		playerGuiChangedConn = Util.DisconnectEvent(playerGuiChangedConn)
 		pcall(function()
-			playerGuiChangedConn = playerGui.TopbarTransparencyChangedSignal:connect(this.UpdateBackgroundTransparency)
+			playerGuiChangedConn = playerGui.TopbarTransparencyChangedSignal:Connect(this.UpdateBackgroundTransparency)
 		end)
 		this:UpdateBackgroundTransparency()
 	end)
@@ -207,19 +245,14 @@ local function CreateTopBar()
 end
 
 
-local BarAlignmentEnum =
-{
-	Right = 0;
-	Left = 1;
-	Middle = 2;
-}
+local BarAlignmentEnum = { Right = 0, Left = 1, Middle = 2 }
 
 local function CreateMenuBar(barAlignment)
-	local this = {}
+	local this = { }
 	local thickness = TopbarConstants.TOPBAR_THICKNESS
 	local alignment = barAlignment or BarAlignmentEnum.Right
-	local items = {}
-	local propertyChangedConnections = {}
+	local items = { }
+	local propertyChangedConnections = { }
 	local dock = nil
 
 	function this:ArrangeItems()
@@ -234,9 +267,9 @@ local function CreateMenuBar(barAlignment)
 			local width = item:GetWidth()
 
 			if alignment == BarAlignmentEnum.Left then
-				item.Position = UDim2.new(0, totalWidth, 0, 0)
+				item.Position = UDim2_new(0, totalWidth, 0, 0)
 			elseif alignment == BarAlignmentEnum.Right then
-				item.Position = UDim2.new(1, -totalWidth - width, 0, 0)
+				item.Position = UDim2_new(1, -totalWidth - width, 0, 0)
 			end
 
 			if i ~= #items then
@@ -247,9 +280,9 @@ local function CreateMenuBar(barAlignment)
 		end
 
 		if alignment == BarAlignmentEnum.Middle then
-			local currentX = -totalWidth / 2
+			local currentX = -totalWidth * 0.5
 			for _, item in ipairs(items) do
-				item.Position = UDim2.new(0, currentX, 0, 0)
+				item.Position = UDim2_new(0, currentX, 0, 0)
 
 				currentX = currentX + item:GetWidth() + spacing
 			end
@@ -299,10 +332,10 @@ local function CreateMenuBar(barAlignment)
 			return item, index
 		end
 
-		table.insert(items, index, item)
+		insert(items, index, item)
 		Util.DisconnectEvent(propertyChangedConnections[item])
-		propertyChangedConnections[item] = item.Changed:connect(function(property)
-			if property == 'AbsoluteSize' then
+		propertyChangedConnections[item] = item.Changed:Connect(function(property)
+			if property == "AbsoluteSize" then
 				self:ArrangeItems()
 			end
 		end)
@@ -318,7 +351,7 @@ local function CreateMenuBar(barAlignment)
 	function this:RemoveItem(item)
 		local index = self:IndexOfItem(item)
 		if index then
-			local removedItem = table.remove(items, index)
+			local removedItem = remove(items, index)
 
 			removedItem.Parent = nil
 			Util.DisconnectEvent(propertyChangedConnections[removedItem])
@@ -333,16 +366,16 @@ local function CreateMenuBar(barAlignment)
 end
 
 local function CreateMenuChangedNotifier()
-	local this = {}
+	local this = { }
 	local notifier3D = require(GuiRoot.Modules.VR.NotifierHint3D)
 
 	function this:PromptNotification()
-		-- Don't show the notification if we are looking down at the menubar already
+		-- Don"t show the notification if we are looking down at the menubar already
 		notifier3D:BeginNotification(notifier3D.DEFAULT_DURATION)
 	end
 
-	Player.FriendStatusChanged:connect(function(fromPlayer, friendStatus)
-		if friendStatus == Enum.FriendStatus.FriendRequestReceived then
+	Player.FriendStatusChanged:Connect(function(fromPlayer, friendStatus)
+		if friendStatus == FriendStatus.FriendRequestReceived then
 			this:PromptNotification()
 		end
 	end)
@@ -352,7 +385,7 @@ local function CreateMenuChangedNotifier()
 			return nil
 		end
 		local parent = object.Parent
-		if parent and parent:IsA('ScreenGui') then
+		if parent and parent:IsA("ScreenGui") then
 			return parent
 		end
 		return findScreenGuiAncestor(parent)
@@ -360,9 +393,9 @@ local function CreateMenuChangedNotifier()
 
 
 	local userGuiModuleName = require(GuiRoot.Modules.VR.UserGui).ModuleName
-	GuiService.Changed:connect(function(prop)
+	GuiService.Changed:Connect(function(prop)
 		-- Notify if the selected object has changed and we are not observing it
-		if prop == 'SelectedObject' and GuiService.SelectedObject then
+		if prop == "SelectedObject" and GuiService.SelectedObject then
 			if findScreenGuiAncestor(GuiService.SelectedObject) then
 				if not VRHub:IsModuleOpened(userGuiModuleName) then
 					this:PromptNotification()
@@ -371,10 +404,10 @@ local function CreateMenuChangedNotifier()
 		end
 	end)
 
-	InputService.TextBoxFocused:connect(function(textbox)
+	InputService.TextBoxFocused:Connect(function(textbox)
 		local myScreenGui = findScreenGuiAncestor(textbox)
 		local myScreenGuiParent = myScreenGui and myScreenGui.Parent
-		if myScreenGuiParent and myScreenGuiParent:IsA('PlayerGui') then
+		if myScreenGuiParent and myScreenGuiParent:IsA("PlayerGui") then
 			this:PromptNotification()
 		end
 	end)
@@ -384,36 +417,31 @@ end
 
 
 local function CreateMenuItem(origInstance)
-	local this = {}
+	local this = { }
 	local instance = origInstance
 
 	function this:SetInstance(newInstance)
 		if not instance then
 			instance = newInstance
 		else
-			print("Trying to set an Instance of a Menu Item that already has an instance; doing nothing.")
+			print("Trying to set an Instance of a Menu Item that already has an instance, doing nothing.")
 		end
 	end
 
 	function this:GetWidth()
 		return self.Size.X.Offset
-	end
-
-	-- We are extending a regular instance.
-	do
-		local mt =
-		{
-			__index = function (t, k)
+	end do
+		local mt = {
+			__index = function(t, k)
 				return instance[k]
-			end;
-
-			__newindex = function (t, k, v)
+			end,
+			__newindex = function(t, k, v)
 				--if instance[k] ~= nil then
 					instance[k] = v
 				--else
 				--	rawset(t, k, v)
 				--end
-			end;
+			end
 		}
 		setmetatable(this, mt)
 	end
@@ -422,43 +450,42 @@ local function CreateMenuItem(origInstance)
 end
 
 local function createNormalHealthBar()
-	local container = Util.Create'ImageButton'
-	{
-		Name = "NameHealthContainer";
-		Size = UDim2.new(0, TopbarConstants.USERNAME_CONTAINER_WIDTH, 1, 0);
-		AutoButtonColor = false;
-		Image = "";
-		BackgroundTransparency = 1;
+	local container = Util.Create"ImageButton" {
+		Name = "NameHealthContainer",
+		Size = UDim2_new(0, TopbarConstants.USERNAME_CONTAINER_WIDTH, 1, 0),
+		AutoButtonColor = false,
+		Image = "",
+		BackgroundTransparency = 1
 	}
 
-	local username = Util.Create'TextLabel'{
-		Name = "Username";
-		Text = Player.Name;
-		Size = UDim2.new(1, -14, 0, 18);
-		Position = UDim2.new(0, 7, 0, 0);
-		Font = Enum.Font.SourceSansBold;
-		FontSize = Enum.FontSize.Size14;
-		BackgroundTransparency = 1;
-		TextColor3 = TopbarConstants.FONT_COLOR;
-		TextYAlignment = Enum.TextYAlignment.Bottom;
-		TextXAlignment = Enum.TextXAlignment.Left;
-		Parent = container;
-	};
+	local username = Util.Create"TextLabel"{
+		Name = "Username",
+		Text = Player.Name,
+		Size = UDim2_new(1, -14, 0, 18),
+		Position = UDim2_new(0, 7, 0, 0),
+		Font = Font.SourceSansBold,
+		TextSize = 14,
+		BackgroundTransparency = 1,
+		TextColor3 = TopbarConstants.FONT_COLOR,
+		TextYAlignment = TextYAlignment.Bottom,
+		TextXAlignment = TextXAlignment.Left,
+		Parent = container
+	}
 
 
-	local accountType = Util.Create'TextLabel'{
-		Name = "AccountType";
-		Text = accountTypeText;
-		Size = UDim2.new(1, -14, 0, 9);
-		Position = UDim2.new(0, 7, 0, 20);
-		Font = Enum.Font.SourceSans;
-		TextSize = 11;
-		BackgroundTransparency = 1;
-		TextColor3 = TopbarConstants.FONT_COLOR;
-		TextYAlignment = Enum.TextYAlignment.Bottom;
-		TextXAlignment = Enum.TextXAlignment.Left;
-		Parent = container;
-	};
+	local accountType = Util.Create"TextLabel"{
+		Name = "AccountType",
+		Text = accountTypeText,
+		Size = UDim2_new(1, -14, 0, 9),
+		Position = UDim2_new(0, 7, 0, 20),
+		Font = Font.SourceSans,
+		TextSize = 11,
+		BackgroundTransparency = 1,
+		TextColor3 = TopbarConstants.FONT_COLOR,
+		TextYAlignment = TextYAlignment.Bottom,
+		TextXAlignment = TextXAlignment.Left,
+		Parent = container
+	}
 
 	spawn(function()
 		wait()
@@ -466,35 +493,35 @@ local function createNormalHealthBar()
 		accountType.Text = accountTypeText
 	end)
 
-	local healthContainer = Util.Create'Frame'{
-		Name = "HealthContainer";
-		Size = UDim2.new(1, -14, 0, 3);
-		Position = UDim2.new(0, 7, 1, -7);
-		BorderSizePixel = 0;
-		BackgroundColor3 = TopbarConstants.HEALTH_BACKGROUND_COLOR;
-		Parent = container;
-	};
+	local healthContainer = Util.Create"Frame"{
+		Name = "HealthContainer",
+		Size = UDim2_new(1, -14, 0, 3),
+		Position = UDim2_new(0, 7, 1, -7),
+		BorderSizePixel = 0,
+		BackgroundColor3 = TopbarConstants.HEALTH_BACKGROUND_COLOR,
+		Parent = container
+	}
 
-	local healthFill = Util.Create'Frame'{
-		Name = "HealthFill";
-		Size = UDim2.new(1, 0, 1, 0);
-		BorderSizePixel = 0;
-		BackgroundColor3 = TopbarConstants.HEALTH_GREEN_COLOR;
-		Parent = healthContainer;
-	};
+	local healthFill = Util.Create"Frame"{
+		Name = "HealthFill",
+		Size = UDim2_new(1, 0, 1, 0),
+		BorderSizePixel = 0,
+		BackgroundColor3 = TopbarConstants.HEALTH_GREEN_COLOR,
+		Parent = healthContainer
+	}
 
 	if enablePortraitMode then
 		local function onResized(viewportSize, isPortrait)
 			if isPortrait then
-				username.TextXAlignment = Enum.TextXAlignment.Right
-				accountType.TextXAlignment = Enum.TextXAlignment.Right
-				container.Size = UDim2.new(0.3, 0, 1, 0)
-				container.AnchorPoint = Vector2.new(1, 0)
+				username.TextXAlignment = TextXAlignment.Right
+				accountType.TextXAlignment = TextXAlignment.Right
+				container.Size = UDim2_new(0.3, 0, 1, 0)
+				container.AnchorPoint = Vector2_new(1, 0)
 			else
-				username.TextXAlignment = Enum.TextXAlignment.Left
-				accountType.TextXAlignment = Enum.TextXAlignment.Left
-				container.Size = UDim2.new(0, TopbarConstants.USERNAME_CONTAINER_WIDTH, 1, 0)
-				container.AnchorPoint = Vector2.new(0, 0)
+				username.TextXAlignment = TextXAlignment.Left
+				accountType.TextXAlignment = TextXAlignment.Left
+				container.Size = UDim2_new(0, TopbarConstants.USERNAME_CONTAINER_WIDTH, 1, 0)
+				container.AnchorPoint = Vector2_new(0, 0)
 			end
 		end
 		Utility:OnResized(container, onResized)
@@ -514,16 +541,15 @@ local function CreateUsernameHealthMenuItem()
 		container, username, healthContainer, healthFill, accountType = createNormalHealthBar()
 	end
 
-	local hurtOverlay = Util.Create'ImageLabel'
-	{
-		Name = "HurtOverlay";
-		BackgroundTransparency = 1;
-		Image = TopbarConstants.HURT_OVERLAY_IMAGE;
-		Position = UDim2.new(-10,0,-10,0);
-		Size = UDim2.new(20,0,20,0);
-		Visible = false;
-		Parent = GuiRoot;
-	};
+	local hurtOverlay = Util.Create"ImageLabel" {
+		Name = "HurtOverlay",
+		BackgroundTransparency = 1,
+		Image = TopbarConstants.HURT_OVERLAY_IMAGE,
+		Position = UDim2_new(-10, 0, -10, 0),
+		Size = UDim2_new(20, 0, 20, 0),
+		Visible = false,
+		Parent = GuiRoot,
+	}
 
 	local this = CreateMenuItem(container)
 
@@ -537,19 +563,19 @@ local function CreateUsernameHealthMenuItem()
 
 	local function AnimateHurtOverlay()
 		if hurtOverlay and not VRService.VREnabled then
-			local newSize = UDim2.new(20, 0, 20, 0)
-			local newPos = UDim2.new(-10, 0, -10, 0)
+			local newSize = UDim2_new(20, 0, 20, 0)
+			local newPos = UDim2_new(-10, 0, -10, 0)
 
 			if hurtOverlay:IsDescendantOf(game) then
 				-- stop any tweens on overlay
-				hurtOverlay:TweenSizeAndPosition(newSize, newPos, Enum.EasingDirection.Out, Enum.EasingStyle.Linear, 0, true, function()
+				hurtOverlay:TweenSizeAndPosition(newSize, newPos, EasingDirection.Out, EasingStyle.Linear, 0, true, function()
 					-- show the gui
-					hurtOverlay.Size = UDim2.new(1,0,1,0)
-					hurtOverlay.Position = UDim2.new(0,0,0,0)
+					hurtOverlay.Size = UDim2_new(1,0,1,0)
+					hurtOverlay.Position = UDim2_new(0,0,0,0)
 					hurtOverlay.Visible = true
 					-- now tween the hide
 					if hurtOverlay:IsDescendantOf(game) then
-						hurtOverlay:TweenSizeAndPosition(newSize, newPos, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, 10, false, function()
+						hurtOverlay:TweenSizeAndPosition(newSize, newPos, EasingDirection.Out, EasingStyle.Quad, 10, false, function()
 							hurtOverlay.Visible = false
 						end)
 					else
@@ -562,44 +588,44 @@ local function CreateUsernameHealthMenuItem()
 	end
 
 	local healthColorToPosition = {
-		[Vector3.new(TopbarConstants.HEALTH_RED_COLOR.r,
+		[Vector3_new(TopbarConstants.HEALTH_RED_COLOR.r,
       TopbarConstants.HEALTH_RED_COLOR.g,
-      TopbarConstants.HEALTH_RED_COLOR.b)] = 0.1;
-		[Vector3.new(TopbarConstants.HEALTH_YELLOW_COLOR.r,
+      TopbarConstants.HEALTH_RED_COLOR.b)] = 0.1,
+		[Vector3_new(TopbarConstants.HEALTH_YELLOW_COLOR.r,
       TopbarConstants.HEALTH_YELLOW_COLOR.g,
-      TopbarConstants.HEALTH_YELLOW_COLOR.b)] = 0.5;
-		[Vector3.new(TopbarConstants.HEALTH_GREEN_COLOR.r,
+      TopbarConstants.HEALTH_YELLOW_COLOR.b)] = 0.5,
+		[Vector3_new(TopbarConstants.HEALTH_GREEN_COLOR.r,
       TopbarConstants.HEALTH_GREEN_COLOR.g,
-      TopbarConstants.HEALTH_GREEN_COLOR.b)] = 0.8;
+      TopbarConstants.HEALTH_GREEN_COLOR.b)] = 0.8,
 	}
-	local min = 0.1
+	local Min = 0.1
 	local minColor = TopbarConstants.HEALTH_RED_COLOR
-	local max = 0.8
+	local Max = 0.8
 	local maxColor = TopbarConstants.HEALTH_GREEN_COLOR
 
 	local function HealthbarColorTransferFunction(healthPercent)
-		if healthPercent < min then
+		if healthPercent < Min then
 			return minColor
-		elseif healthPercent > max then
+		elseif healthPercent > Max then
 			return maxColor
 		end
 
-		-- Shepard's Interpolation
-		local numeratorSum = Vector3.new(0,0,0)
+		-- Shepard"s Interpolation
+		local numeratorSum = Vector3_new(0, 0, 0)
 		local denominatorSum = 0
 		for colorSampleValue, samplePoint in pairs(healthColorToPosition) do
 			local distance = healthPercent - samplePoint
 			if distance == 0 then
-				-- If we are exactly on an existing sample value then we don't need to interpolate
-				return Color3.new(colorSampleValue.x, colorSampleValue.y, colorSampleValue.z)
+				-- If we are exactly on an existing sample value then we don"t need to interpolate
+				return Color3_new(colorSampleValue.x, colorSampleValue.y, colorSampleValue.z)
 			else
-				local wi = 1 / (distance*distance)
+				local wi = 1 / (distance * distance)
 				numeratorSum = numeratorSum + wi * colorSampleValue
 				denominatorSum = denominatorSum + wi
 			end
 		end
 		local result = numeratorSum / denominatorSum
-		return Color3.new(result.x, result.y, result.z)
+		return Color3_new(result.x, result.y, result.z)
 	end
 
 	local function UpdateHealthVisible()
@@ -627,14 +653,14 @@ local function CreateUsernameHealthMenuItem()
 					AnimateHurtOverlay()
 				end
 
-				healthFill.Size = UDim2.new(healthPercent, 0, 1, 0)
+				healthFill.Size = UDim2_new(healthPercent, 0, 1, 0)
 				healthFill.BackgroundColor3 = healthColor
 
 				lastHealth = health
 			end
 		end
 		Util.DisconnectEvent(humanoidChangedConn)
-		humanoidChangedConn = humanoid.HealthChanged:connect(OnHumanoidHealthChanged)
+		humanoidChangedConn = humanoid.HealthChanged:Connect(OnHumanoidHealthChanged)
 		OnHumanoidHealthChanged(lastHealth)
 	end
 
@@ -653,8 +679,8 @@ local function CreateUsernameHealthMenuItem()
 		end
 		Util.DisconnectEvent(childAddedConn)
 		Util.DisconnectEvent(childRemovedConn)
-		childAddedConn = character.ChildAdded:connect(onChildAddedOrRemoved)
-		childRemovedConn = character.ChildRemoved:connect(onChildAddedOrRemoved)
+		childAddedConn = character.ChildAdded:Connect(onChildAddedOrRemoved)
+		childRemovedConn = character.ChildRemoved:Connect(onChildAddedOrRemoved)
 	end
 
 	local function UpdateContainerEnabled()
@@ -682,14 +708,14 @@ local function CreateUsernameHealthMenuItem()
 			UpdateContainerEnabled()
 		end)
 
-	-- Don't need to disconnect this one because we never reconnect it.
-	Player.CharacterAdded:connect(OnCharacterAdded)
+	-- Don"t need to disconnect this one because we never reconnect it.
+	Player.CharacterAdded:Connect(OnCharacterAdded)
 	if Player.Character then
 		OnCharacterAdded(Player.Character)
 	end
 
 	local PlayerlistModule = require(GuiRoot.Modules.PlayerlistModule)
-	container.MouseButton1Click:connect(function()
+	container.MouseButton1Click:Connect(function()
 		if isTopbarEnabled() then
 			PlayerlistModule.ToggleVisibility()
 		end
@@ -703,17 +729,16 @@ end
 local function CreateLeaderstatsMenuItem()
 	local PlayerlistModule = require(GuiRoot.Modules.PlayerlistModule)
 
-	local leaderstatsContainer = Util.Create'ImageButton'
-	{
-		Name = "LeaderstatsContainer";
-		Size = UDim2.new(0, 0, 1, 0);
-		AutoButtonColor = false;
-		Image = "";
-		BackgroundTransparency = 1;
-	};
+	local leaderstatsContainer = Util.Create"ImageButton"{
+		Name = "LeaderstatsContainer",
+		Size = UDim2_new(0, 0, 1, 0),
+		AutoButtonColor = false,
+		Image = "",
+		BackgroundTransparency = 1
+	}
 
 	local this = CreateMenuItem(leaderstatsContainer)
-	local columns = {}
+	local columns = { }
 
 	rawset(this, "SetColumns",
 		function(self, columnsList)
@@ -725,7 +750,7 @@ local function CreateLeaderstatsMenuItem()
 			for _, oldColumn in pairs(columns) do
 				oldColumn:Destroy()
 			end
-			columns = {}
+			columns = { }
 			-- End destroy old columns
 			local count = 0
 			for index, columnData in pairs(columnsList) do  -- i = 1, numColumns do
@@ -733,82 +758,75 @@ local function CreateLeaderstatsMenuItem()
 					local columnName = columnData.Name
 					local columnValue = columnData.Text
 
-					local columnframe = Util.Create'Frame'
-					{
-						Name = "Column" .. tostring(index);
-						Size = UDim2.new(0,
-              TopbarConstants.COLUMN_WIDTH + (index == numColumns and 0 or TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH),
-              1, 0);
-						Position = UDim2.new(0,
-              TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH + (TopbarConstants.COLUMN_WIDTH + TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH) * (index-1),
-              0, 0);
-						BackgroundTransparency = 1;
-						Parent = leaderstatsContainer;
+					local columnframe = Util.Create"Frame" {
+						Name = "Column" .. tostring(index),
+						Size = UDim2_new(0, TopbarConstants.COLUMN_WIDTH + (index == numColumns and 0 or TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH), 1, 0),
+						Position = UDim2_new(0, TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH + (TopbarConstants.COLUMN_WIDTH + TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH) * (index - 1), 0, 0),
+						BackgroundTransparency = 1,
+						Parent = leaderstatsContainer,
 
-						Util.Create'TextLabel'
+						Util.Create"TextLabel"
 						{
-							Name = "ColumnName";
-							Text = columnName;
-							Size = UDim2.new(1, 0, 0, 10);
-							Position = UDim2.new(0, 0, 0, 4);
-							Font = Enum.Font.SourceSans;
-							FontSize = Enum.FontSize.Size14;
-							BorderSizePixel = 0;
-							BackgroundTransparency = 1;
-							TextColor3 = TopbarConstants.FONT_COLOR;
-							TextYAlignment = Enum.TextYAlignment.Center;
-							TextXAlignment = Enum.TextXAlignment.Center;
-						};
+							Name = "ColumnName",
+							Text = columnName,
+							Size = UDim2_new(1, 0, 0, 10),
+							Position = UDim2_new(0, 0, 0, 4),
+							Font = Font.SourceSans,
+							TextSize = 14,
+							BorderSizePixel = 0,
+							BackgroundTransparency = 1,
+							TextColor3 = TopbarConstants.FONT_COLOR,
+							TextYAlignment = TextYAlignment.Center,
+							TextXAlignment = TextXAlignment.Center,
+						},
 
-						Util.Create'TextLabel'
+						Util.Create"TextLabel"
 						{
-							Name = "ColumnValue";
-							Text = columnValue;
-							Size = UDim2.new(1, 0, 0, 10);
-							Position = UDim2.new(0, 0, 0, 19);
-							Font = Enum.Font.SourceSansBold;
-							FontSize = Enum.FontSize.Size14;
-							BorderSizePixel = 0;
-							BackgroundTransparency = 1;
-							TextColor3 = TopbarConstants.FONT_COLOR;
-							TextYAlignment = Enum.TextYAlignment.Center;
-							TextXAlignment = Enum.TextXAlignment.Center;
-						};
-					};
+							Name = "ColumnValue",
+							Text = columnValue,
+							Size = UDim2_new(1, 0, 0, 10),
+							Position = UDim2_new(0, 0, 0, 19),
+							Font = Font.SourceSansBold,
+							TextSize = 14,
+							BorderSizePixel = 0,
+							BackgroundTransparency = 1,
+							TextColor3 = TopbarConstants.FONT_COLOR,
+							TextYAlignment = TextYAlignment.Center,
+							TextXAlignment = TextXAlignment.Center,
+						},
+					}
 					columns[columnName] = columnframe
 					count = count + 1
 				end
 			end
-			leaderstatsContainer.Size = UDim2.new(0,
-        TopbarConstants.COLUMN_WIDTH * count + TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH * count,
-        1, 0)
+			leaderstatsContainer.Size = UDim2_new(0, TopbarConstants.COLUMN_WIDTH * count + TopbarConstants.NAME_LEADERBOARD_SEP_WIDTH * count, 1, 0)
 		end)
 
 	rawset(this, "UpdateColumnValue",
 		function(self, columnName, value)
 			local column = columns[columnName]
-			local columnValue = column and column:FindFirstChild('ColumnValue')
+			local columnValue = column and column:FindFirstChild("ColumnValue")
 			if columnValue then
 				columnValue.Text = tostring(value)
 			end
 		end)
 
-	topbarEnabledChangedEvent.Event:connect(function(enabled)
-		PlayerlistModule.TopbarEnabledChanged(enabled and not VRService.VREnabled) --We don't show the playerlist at all in VR
+	topbarEnabledChangedEvent.Event:Connect(function(enabled)
+		PlayerlistModule.TopbarEnabledChanged(enabled and not VRService.VREnabled) --We don"t show the playerlist at all in VR
 	end)
 
 	this:SetColumns(PlayerlistModule.GetStats())
-	PlayerlistModule.OnLeaderstatsChanged.Event:connect(function(newStatColumns)
+	PlayerlistModule.OnLeaderstatsChanged.Event:Connect(function(newStatColumns)
 		if not enablePortraitMode or not Utility:IsPortrait() then
 			this:SetColumns(newStatColumns)
 		end
 	end)
 
-	PlayerlistModule.OnStatChanged.Event:connect(function(statName, statValueAsString)
+	PlayerlistModule.OnStatChanged.Event:Connect(function(statName, statValueAsString)
 		this:UpdateColumnValue(statName, statValueAsString)
 	end)
 
-	leaderstatsContainer.MouseButton1Click:connect(function()
+	leaderstatsContainer.MouseButton1Click:Connect(function()
 		if isTopbarEnabled() then
 			PlayerlistModule.ToggleVisibility()
 		end
@@ -822,30 +840,28 @@ end
 local function CreateSettingsIcon(topBarInstance)
 	local MenuModule = require(GuiRoot.Modules.Settings.SettingsHub)
 
-	local settingsIconButton = Util.Create'ImageButton'
-	{
-		Name = "Settings";
-		Size = UDim2.new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS);
-		Image = "";
-		AutoButtonColor = false;
-		BackgroundTransparency = 1;
+	local settingsIconButton = Util.Create"ImageButton"{
+		Name = "Settings",
+		Size = UDim2_new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS),
+		Image = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
 	}
 
-	local settingsIconImage = Util.Create'ImageLabel'
-	{
-		Name = "SettingsIcon";
-		Size = UDim2.new(0, 32, 0, 25);
-		Position = UDim2.new(0.5, -16, 0.5, -12);
-		BackgroundTransparency = 1;
-		Image = "rbxasset://textures/ui/Menu/Hamburger.png";
-		Parent = settingsIconButton;
-	};
+	local settingsIconImage = Util.Create"ImageLabel"{
+		Name = "SettingsIcon",
+		Size = UDim2_new(0, 32, 0, 25),
+		Position = UDim2_new(0.5, -16, 0.5, -12),
+		BackgroundTransparency = 1,
+		Image = "rbxasset://textures/ui/Menu/Hamburger.png",
+		Parent = settingsIconButton,
+	}
 
 	local function UpdateHamburgerIcon()
 		if settingsActive then
-			settingsIconImage.Image = "rbxasset://textures/ui/Menu/HamburgerDown.png";
+			settingsIconImage.Image = "rbxasset://textures/ui/Menu/HamburgerDown.png"
 		else
-			settingsIconImage.Image = "rbxasset://textures/ui/Menu/Hamburger.png";
+			settingsIconImage.Image = "rbxasset://textures/ui/Menu/Hamburger.png"
 		end
 	end
 
@@ -862,9 +878,9 @@ local function CreateSettingsIcon(topBarInstance)
 		return settingsActive
 	end
 
-	settingsIconButton.MouseButton1Click:connect(function() toggleSettings() end)
+	settingsIconButton.MouseButton1Click:Connect(function() toggleSettings() end)
 
-	MenuModule.SettingsShowSignal:connect(function(active)
+	MenuModule.SettingsShowSignal:Connect(function(active)
 		settingsActive = active
 		topBarInstance:UpdateBackgroundTransparency()
 		UpdateHamburgerIcon()
@@ -897,31 +913,29 @@ local function CreateUnreadMessagesNotifier(ChatModule)
 	local chatActive = false
 	local lastMessageCount = 0
 
-	local chatCounter = Util.Create'ImageLabel'
-	{
-		Name = "ChatCounter";
-		Size = UDim2.new(0, 18, 0, 18);
-		Position = UDim2.new(1, -12, 0, -4);
-		BackgroundTransparency = 1;
-		Image = "rbxasset://textures/ui/Chat/MessageCounter.png";
-		Visible = false;
-	};
+	local chatCounter = Util.Create"ImageLabel"{
+		Name = "ChatCounter",
+		Size = UDim2_new(0, 18, 0, 18),
+		Position = UDim2_new(1, -12, 0, -4),
+		BackgroundTransparency = 1,
+		Image = "rbxasset://textures/ui/Chat/MessageCounter.png",
+		Visible = false
+	}
 
-	local chatCountText = Util.Create'TextLabel'
-	{
-		Name = "ChatCounterText";
-		Text = '';
-		Size = UDim2.new(0, 13, 0, 9);
-		Position = UDim2.new(0.5, -7, 0.5, -7);
-		Font = Enum.Font.SourceSansBold;
-		FontSize = Enum.FontSize.Size14;
-		BorderSizePixel = 0;
-		BackgroundTransparency = 1;
-		TextColor3 = TopbarConstants.FONT_COLOR;
-		TextYAlignment = Enum.TextYAlignment.Center;
-		TextXAlignment = Enum.TextXAlignment.Center;
-		Parent = chatCounter;
-	};
+	local chatCountText = Util.Create"TextLabel"{
+		Name = "ChatCounterText",
+		Text = "",
+		Size = UDim2_new(0, 13, 0, 9),
+		Position = UDim2_new(0.5, -7, 0.5, -7),
+		Font = Font.SourceSansBold,
+		TextSize = 14,
+		BorderSizePixel = 0,
+		BackgroundTransparency = 1,
+		TextColor3 = TopbarConstants.FONT_COLOR,
+		TextYAlignment = TextYAlignment.Center,
+		TextXAlignment = TextXAlignment.Center,
+		Parent = chatCounter
+	}
 
 	local function OnUnreadMessagesChanged(count)
 		if chatActive then
@@ -952,10 +966,10 @@ local function CreateUnreadMessagesNotifier(ChatModule)
 
 	if ChatModule then
 		if ChatModule.VisibilityStateChanged then
-			ChatModule.VisibilityStateChanged:connect(onChatStateChanged)
+			ChatModule.VisibilityStateChanged:Connect(onChatStateChanged)
 		end
 		if ChatModule.MessagesChanged then
-			ChatModule.MessagesChanged:connect(OnUnreadMessagesChanged)
+			ChatModule.MessagesChanged:Connect(OnUnreadMessagesChanged)
 		end
 
 		onChatStateChanged(ChatModule:GetVisibility())
@@ -966,41 +980,39 @@ local function CreateUnreadMessagesNotifier(ChatModule)
 end
 
 local function CreateChatIcon()
-	local chatEnabled = game:GetService("UserInputService"):GetPlatform() ~= Enum.Platform.XBoxOne
+	local chatEnabled = game:GetService("UserInputService"):GetPlatform() ~= Platform.XBoxOne
 	if not chatEnabled then return end
 
 	local ChatModule = require(GuiRoot.Modules.ChatSelector)
 
 	local debounce = 0
 
-	local chatIconButton = Util.Create'ImageButton'
-	{
-		Name = "Chat";
-		Size = UDim2.new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS);
-		Image = "";
-		AutoButtonColor = false;
-		BackgroundTransparency = 1;
-	};
+	local chatIconButton = Util.Create"ImageButton"{
+		Name = "Chat",
+		Size = UDim2_new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS),
+		Image = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1
+	}
 
-	local chatIconImage = Util.Create'ImageLabel'
-	{
-		Name = "ChatIcon";
-		Size = UDim2.new(0, 28, 0, 27);
-		Position = UDim2.new(0.5, -14, 0.5, -13);
-		BackgroundTransparency = 1;
-		Image = "rbxasset://textures/ui/Chat/Chat.png";
-		Parent = chatIconButton;
-	};
+	local chatIconImage = Util.Create"ImageLabel"{
+		Name = "ChatIcon",
+		Size = UDim2_new(0, 28, 0, 27),
+		Position = UDim2_new(0.5, -14, 0.5, -13),
+		BackgroundTransparency = 1,
+		Image = "rbxasset://textures/ui/Chat/Chat.png",
+		Parent = chatIconButton
+	}
 	if not Util.IsTouchDevice() then
 		local chatCounter = CreateUnreadMessagesNotifier(ChatModule)
-		chatCounter.Parent = chatIconImage;
+		chatCounter.Parent = chatIconImage
 	end
 
 	local function updateIcon(down)
 		if down then
-			chatIconImage.Image = "rbxasset://textures/ui/Chat/ChatDown.png";
+			chatIconImage.Image = "rbxasset://textures/ui/Chat/ChatDown.png"
 		else
-			chatIconImage.Image = "rbxasset://textures/ui/Chat/Chat.png";
+			chatIconImage.Image = "rbxasset://textures/ui/Chat/Chat.png"
 		end
 	end
 
@@ -1026,16 +1038,16 @@ local function CreateChatIcon()
 		end
 	end
 
-	topbarEnabledChangedEvent.Event:connect(function(enabled)
+	topbarEnabledChangedEvent.Event:Connect(function(enabled)
 		ChatModule:TopbarEnabledChanged(enabled)
 	end)
 
-	chatIconButton.MouseButton1Click:connect(function()
+	chatIconButton.MouseButton1Click:Connect(function()
 		toggleChat()
 	end)
 
 	if ChatModule.ChatBarFocusChanged then
-		ChatModule.ChatBarFocusChanged:connect(function(isFocused)
+		ChatModule.ChatBarFocusChanged:Connect(function(isFocused)
 			if Util.IsTouchDevice() or ChatModule:IsBubbleChatOnly() then
 				updateIcon(isFocused)
 				debounce = tick()
@@ -1048,7 +1060,7 @@ local function CreateChatIcon()
 	end
 
 	if ChatModule.BubbleChatOnlySet then
-		ChatModule.BubbleChatOnlySet:connect(function()
+		ChatModule.BubbleChatOnlySet:Connect(function()
 			if ChatModule:IsBubbleChatOnly() then
 				updateIcon(false)
 			elseif not Util.IsTouchDevice() then
@@ -1058,7 +1070,7 @@ local function CreateChatIcon()
 	end
 
 	if ChatModule.VisibilityStateChanged then
-		ChatModule.VisibilityStateChanged:connect(onChatStateChanged)
+		ChatModule.VisibilityStateChanged:Connect(onChatStateChanged)
 	end
 
 	if not VRService.VREnabled then
@@ -1089,33 +1101,31 @@ end
 local function CreateMobileHideChatIcon()
 	local ChatModule = require(GuiRoot.Modules.ChatSelector)
 
-	local chatHideIconButton = Util.Create'ImageButton'
-	{
-		Name = "ChatVisible";
-		Size = UDim2.new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS);
-		Image = "";
-		AutoButtonColor = false;
-		BackgroundTransparency = 1;
-	};
+	local chatHideIconButton = Util.Create"ImageButton"{
+		Name = "ChatVisible",
+		Size = UDim2_new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS),
+		Image = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1
+	}
 
-	local chatIconImage = Util.Create'ImageLabel'
-	{
-		Name = "ChatVisibleIcon";
-		Size = UDim2.new(0, 28, 0, 27);
-		Position = UDim2.new(0.5, -14, 0.5, -13);
-		BackgroundTransparency = 1;
-		Image = "rbxasset://textures/ui/Chat/ToggleChat.png";
-		Parent = chatHideIconButton;
-	};
+	local chatIconImage = Util.Create"ImageLabel"{
+		Name = "ChatVisibleIcon",
+		Size = UDim2_new(0, 28, 0, 27),
+		Position = UDim2_new(0.5, -14, 0.5, -13),
+		BackgroundTransparency = 1,
+		Image = "rbxasset://textures/ui/Chat/ToggleChat.png",
+		Parent = chatHideIconButton
+	}
 
 	local unreadMessageNotifier = CreateUnreadMessagesNotifier(ChatModule)
 	unreadMessageNotifier.Parent = chatIconImage
 
 	local function updateIcon(down)
 		if down then
-			chatIconImage.Image = "rbxasset://textures/ui/Chat/ToggleChatDown.png";
+			chatIconImage.Image = "rbxasset://textures/ui/Chat/ToggleChatDown.png"
 		else
-			chatIconImage.Image = "rbxasset://textures/ui/Chat/ToggleChat.png";
+			chatIconImage.Image = "rbxasset://textures/ui/Chat/ToggleChat.png"
 		end
 	end
 
@@ -1127,13 +1137,13 @@ local function CreateMobileHideChatIcon()
 		updateIcon(visible)
 	end
 
-	chatHideIconButton.MouseButton1Click:connect(function()
+	chatHideIconButton.MouseButton1Click:Connect(function()
 		toggleChat()
         GameSettings.ChatVisible = ChatModule:GetVisibility()
 	end)
 
 	if ChatModule.VisibilityStateChanged then
-		ChatModule.VisibilityStateChanged:connect(onChatStateChanged)
+		ChatModule.VisibilityStateChanged:Connect(onChatStateChanged)
 	end
 	onChatStateChanged(ChatModule:GetVisibility())
 
@@ -1149,44 +1159,43 @@ end
 local function CreateBackpackIcon()
 	local BackpackModule = require(GuiRoot.Modules.BackpackScript)
 
-	local backpackIconButton = Util.Create'ImageButton'
+	local backpackIconButton = Util.Create"ImageButton"
 	{
-		Name = "Backpack";
-		Size = UDim2.new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS);
-		Image = "";
-		AutoButtonColor = false;
-		BackgroundTransparency = 1;
-	};
-
-	local backpackIconImage = Util.Create'ImageLabel'
+		Name = "Backpack",
+		Size = UDim2_new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS),
+		Image = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
+	}
+	local backpackIconImage = Util.Create"ImageLabel"
 	{
-		Name = "BackpackIcon";
-		Size = UDim2.new(0, 22, 0, 28);
-		Position = UDim2.new(0.5, -11, 0.5, -14);
-		BackgroundTransparency = 1;
-		Image = "rbxasset://textures/ui/Backpack/Backpack.png";
-		Parent = backpackIconButton;
-	};
+		Name = "BackpackIcon",
+		Size = UDim2_new(0, 22, 0, 28),
+		Position = UDim2_new(0.5, -11, 0.5, -14),
+		BackgroundTransparency = 1,
+		Image = "rbxasset://textures/ui/Backpack/Backpack.png",
+		Parent = backpackIconButton,
+	}
 
 	local function onBackpackStateChanged(open)
 		if open then
-			backpackIconImage.Image = "rbxasset://textures/ui/Backpack/Backpack_Down.png";
+			backpackIconImage.Image = "rbxasset://textures/ui/Backpack/Backpack_Down.png"
 		else
-			backpackIconImage.Image = "rbxasset://textures/ui/Backpack/Backpack.png";
+			backpackIconImage.Image = "rbxasset://textures/ui/Backpack/Backpack.png"
 		end
 	end
 
-	BackpackModule.StateChanged.Event:connect(onBackpackStateChanged)
+	BackpackModule.StateChanged.Event:Connect(onBackpackStateChanged)
 
 	local function toggleBackpack()
 		BackpackModule:OpenClose()
 	end
 
-	topbarEnabledChangedEvent.Event:connect(function(enabled)
+	topbarEnabledChangedEvent.Event:Connect(function(enabled)
 		BackpackModule:TopbarEnabledChanged(enabled)
 	end)
 
-	backpackIconButton.MouseButton1Click:connect(function()
+	backpackIconButton.MouseButton1Click:Connect(function()
 		BackpackModule:OpenClose()
 	end)
 
@@ -1196,25 +1205,25 @@ end
 
 ----- Stop Recording --
 local function CreateStopRecordIcon()
-	local stopRecordIconButton = Util.Create'ImageButton'
+	local stopRecordIconButton = Util.Create"ImageButton"
 	{
-		Name = "StopRecording";
-		Size = UDim2.new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS);
-		Image = "";
-		Visible = true;
-		BackgroundTransparency = 1;
-	};
+		Name = "StopRecording",
+		Size = UDim2_new(0, 50, 0, TopbarConstants.TOPBAR_THICKNESS),
+		Image = "",
+		Visible = true,
+		BackgroundTransparency = 1
+	}
 	stopRecordIconButton:SetVerb("RecordToggle")
 
-	local stopRecordIconLabel = Util.Create'ImageLabel'
+	local stopRecordIconLabel = Util.Create"ImageLabel"
 	{
-		Name = "StopRecordingIcon";
-		Size = UDim2.new(0, 28, 0, 28);
-		Position = UDim2.new(0.5, -14, 0.5, -14);
-		BackgroundTransparency = 1;
-		Image = "rbxasset://textures/ui/RecordDown.png";
-		Parent = stopRecordIconButton;
-	};
+		Name = "StopRecordingIcon",
+		Size = UDim2_new(0, 28, 0, 28),
+		Position = UDim2_new(0.5, -14, 0.5, -14),
+		BackgroundTransparency = 1,
+		Image = "rbxasset://textures/ui/RecordDown.png",
+		Parent = stopRecordIconButton
+	}
 
 	return CreateMenuItem(stopRecordIconButton)
 end
@@ -1224,28 +1233,28 @@ end
 
 
 local function CreateNoTopBarAccountType()
-	local container = Util.Create'ImageButton'
+	local container = Util.Create"ImageButton"
 	{
-		Name = "AccountTypeContainer";
-		Size = UDim2.new(0, 0, 0, 0);
-		AutoButtonColor = false;
-		Image = "";
-		BackgroundTransparency = 1;
+		Name = "AccountTypeContainer",
+		Size = UDim2_new(0, 0, 0, 0),
+		AutoButtonColor = false,
+		Image = "",
+		BackgroundTransparency = 1
 	}
 
-	local accountTypeTextLabel = Util.Create'TextLabel'{
-		Name = "AccountTypeText";
-		Text = accountTypeTextShort;
-		Size = UDim2.new(1, -12, 1, -12);
-		Position = UDim2.new(0, 0, 0, 6);
-		Font = Enum.Font.SourceSansBold;
-		FontSize = Enum.FontSize.Size14;
-		BackgroundTransparency = 1;
-		TextColor3 = TopbarConstants.FONT_COLOR;
-		TextYAlignment = Enum.TextYAlignment.Center;
-		TextXAlignment = Enum.TextXAlignment.Left;
-		Parent = container;
-	};
+	local accountTypeTextLabel = Util.Create"TextLabel"{
+		Name = "AccountTypeText",
+		Text = accountTypeTextShort,
+		Size = UDim2_new(1, -12, 1, -12),
+		Position = UDim2_new(0, 0, 0, 6),
+		Font = Font.SourceSansBold,
+		TextSize = 14,
+		BackgroundTransparency = 1,
+		TextColor3 = TopbarConstants.FONT_COLOR,
+		TextYAlignment = TextYAlignment.Center,
+		TextXAlignment = TextXAlignment.Left,
+		Parent = container
+	}
 
 	spawn(function()
 		wait()
@@ -1254,23 +1263,23 @@ local function CreateNoTopBarAccountType()
 		if container.Visible then
 			local textBounds = accountTypeTextLabel.TextBounds.X
 			local containerSize = textBounds
-			container.Size = UDim2.new(0, containerSize, 1, 0)
+			container.Size = UDim2_new(0, containerSize, 1, 0)
 		end
 	end)
 
 	local function UpdateNoTopBarAccountType()
 		if isTopbarEnabled() or VRService.VREnabled then
 			container.Visible = false
-			container.Size = UDim2.new(0, 0, 0, 0)
+			container.Size = UDim2_new(0, 0, 0, 0)
 		else
 			container.Visible = true
 			local textBounds = accountTypeTextLabel.TextBounds.X
 			local containerSize = textBounds
-			container.Size = UDim2.new(0, containerSize, 1, 0)
+			container.Size = UDim2_new(0, containerSize, 1, 0)
 		end
 	end
 
-	topbarEnabledChangedEvent.Event:connect(UpdateNoTopBarAccountType)
+	topbarEnabledChangedEvent.Event:Connect(UpdateNoTopBarAccountType)
 	VRService:GetPropertyChangedSignal("VREnabled"):Connect(UpdateNoTopBarAccountType)
 	UpdateNoTopBarAccountType()
 
@@ -1308,8 +1317,8 @@ local nameAndHealthMenuItem = CreateUsernameHealthMenuItem()
 
 local menuChangedNotifier3D = nil
 
-local LEFT_ITEM_ORDER = {}
-local RIGHT_ITEM_ORDER = {}
+local LEFT_ITEM_ORDER = { }
+local RIGHT_ITEM_ORDER = { }
 
 
 -- Set Item Orders
@@ -1354,7 +1363,7 @@ local ChatModule = require(GuiRoot.Modules.ChatSelector)
 
 local function OnCoreGuiChanged(coreGuiType, coreGuiEnabled)
 	local enabled = coreGuiEnabled and topbarEnabled
-	if coreGuiType == Enum.CoreGuiType.PlayerList or coreGuiType == Enum.CoreGuiType.All then
+	if coreGuiType == CoreGuiType.PlayerList or coreGuiType == CoreGuiType.All then
 		if leaderstatsMenuItem then
 			if enabled then
 				AddItemInOrder(RightMenubar, leaderstatsMenuItem, RIGHT_ITEM_ORDER)
@@ -1363,12 +1372,12 @@ local function OnCoreGuiChanged(coreGuiType, coreGuiEnabled)
 			end
 		end
 	end
-	if coreGuiType == Enum.CoreGuiType.Health or coreGuiType == Enum.CoreGuiType.All then
+	if coreGuiType == CoreGuiType.Health or coreGuiType == CoreGuiType.All then
 		if nameAndHealthMenuItem then
 			nameAndHealthMenuItem:SetHealthbarEnabled(enabled)
 		end
 	end
-	if coreGuiType == Enum.CoreGuiType.Backpack or coreGuiType == Enum.CoreGuiType.All then
+	if coreGuiType == CoreGuiType.Backpack or coreGuiType == CoreGuiType.All then
 		if backpackIcon then
 			if enabled then
 				AddItemInOrder(LeftMenubar, backpackIcon, LEFT_ITEM_ORDER)
@@ -1377,7 +1386,7 @@ local function OnCoreGuiChanged(coreGuiType, coreGuiEnabled)
 			end
 		end
 	end
-	if coreGuiType == Enum.CoreGuiType.Chat or coreGuiType == Enum.CoreGuiType.All then
+	if coreGuiType == CoreGuiType.Chat or coreGuiType == CoreGuiType.All then
 		enabled = enabled and (not ChatModule:IsDisabled())
 		local ChatSelector = require(GuiRoot.Modules.ChatSelector)
 		local showTopbarChatIcon = enabled
@@ -1406,9 +1415,9 @@ local function OnCoreGuiChanged(coreGuiType, coreGuiEnabled)
 	end
 
 	if nameAndHealthMenuItem then
-		local playerListOn = StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.PlayerList)
-		local healthbarOn = StarterGui:GetCoreGuiEnabled(Enum.CoreGuiType.Health)
-		-- Left-align the player's name if either playerlist or healthbar is shown
+		local playerListOn = StarterGui:GetCoreGuiEnabled(CoreGuiType.PlayerList)
+		local healthbarOn = StarterGui:GetCoreGuiEnabled(CoreGuiType.Health)
+		-- Left-align the player"s name if either playerlist or healthbar is shown
 		nameAndHealthMenuItem:SetNameVisible(topbarEnabled)
 	end
 end
@@ -1426,7 +1435,7 @@ local function OnChatModuleDisabled()
 end
 
 if ChatModule.ChatDisabled then
-	ChatModule.ChatDisabled:connect(function()
+	ChatModule.ChatDisabled:Connect(function()
 		OnChatModuleDisabled()
 	end)
 end
@@ -1453,7 +1462,7 @@ end
 local gameOptions = settings():FindFirstChild("Game Options")
 if gameOptions and not isTenFootInterface then
 	local success, result = pcall(function()
-		gameOptions.VideoRecordingChangeRequest:connect(function(recording)
+		gameOptions.VideoRecordingChangeRequest:Connect(function(recording)
 			if recording and isTopbarEnabled() then
 				AddItemInOrder(LeftMenubar, stopRecordingIcon, LEFT_ITEM_ORDER)
 			else
@@ -1475,10 +1484,10 @@ local function topbarEnabledChanged()
 
 	topbarEnabledChangedEvent:Fire(topbarEnabled)
 	TopBar:UpdateBackgroundTransparency()
-	for _, enumItem in pairs(Enum.CoreGuiType:GetEnumItems()) do
+	for _, enumItem in pairs(CoreGuiType:GetEnumItems()) do
 		-- The All enum will be false if any of the coreguis are false
 		-- therefore by force updating it we are clobbering the previous sets
-		if enumItem ~= Enum.CoreGuiType.All then
+		if enumItem ~= CoreGuiType.All then
 			OnCoreGuiChanged(enumItem, StarterGui:GetCoreGuiEnabled(enumItem))
 		end
 	end
@@ -1490,7 +1499,7 @@ if enablePortraitMode then
 	local PlayerlistModule = require(GuiRoot.Modules.PlayerlistModule)
 	local function onResized(viewportSize, isPortrait)
 		if isPortrait then
-			leaderstatsMenuItem:SetColumns({})
+			leaderstatsMenuItem:SetColumns({ })
 		else
 			leaderstatsMenuItem:SetColumns(PlayerlistModule.GetStats())
 		end
@@ -1526,4 +1535,4 @@ spawn(function()
 end)
 
 -- Hook-up coregui changing
-StarterGui.CoreGuiChangedSignal:connect(OnCoreGuiChanged)
+StarterGui.CoreGuiChangedSignal:Connect(OnCoreGuiChanged)

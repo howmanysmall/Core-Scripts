@@ -5,6 +5,17 @@
 		Description: Handles performance stats gui.
 --]]
 
+--note from HowManySmall:
+	-- you know what really grinds my gears?
+	-- when code is formatted with spaces and not tabs
+local game = game
+local spawn = spawn
+local require = require
+local ipairs = ipairs
+
+local Instance = Instance local Instance_new = Instance.new
+local UDim2 = UDim2 local UDim2_new = UDim2.new
+
 --[[ Services ]]--
 local PlayersService = game:GetService("Players")
 local Settings = UserSettings()
@@ -20,12 +31,12 @@ local StatsViewerClass = require(CoreGuiService.RobloxGui.Modules.Stats.StatsVie
 local TopbarConstants = require(CoreGuiService.RobloxGui.Modules.TopbarConstants)
 
 --[[ Script Variables ]]--
-local masterFrame = Instance.new("Frame")
+local masterFrame = Instance_new("Frame")
 masterFrame.Name = "PerformanceStats"
 
 local statsAggregatorManager = StatsAggregatorManagerClass.getSingleton()
 local statsViewer = StatsViewerClass.new()
-local statsButtonsByType ={}
+local statsButtonsByType = { }
 local currentStatType = nil
 
 for i, statType in ipairs(StatsUtils.AllStatTypes) do
@@ -37,10 +48,10 @@ end
 function ConfigureMasterFrame()
   -- Set up the main frame that contains the whole PS GUI.  
   -- Avoid the top button bar.
-  masterFrame.Position = UDim2.new(0, 0, 0, 0)
-  masterFrame.Size = UDim2.new(1, 0, 1, 0)
+  masterFrame.Position = UDim2_new(0, 0, 0, 0)
+  masterFrame.Size = UDim2_new(1, 0, 1, 0)
   masterFrame.Selectable = false
-  masterFrame.BackgroundTransparency = 1.0
+  masterFrame.BackgroundTransparency = 1
   masterFrame.Active = false  
   masterFrame.ZIndex = 0
   
@@ -62,7 +73,7 @@ function OnButtonToggled(toggledStatType)
   local selectedState = toggledButton._isSelected
   selectedState = not selectedState
   
-  if (selectedState) then 
+  if selectedState then 
     currentStatType = toggledStatType
   else
     currentStatType = nil
@@ -83,7 +94,7 @@ function UpdateViewerVisibility()
   -- If a particular button/tab is on, show the Viewer.
   -- 
   -- Don't bother if we're already there.
-  if (currentStatType == nil) then 
+  if currentStatType == nil then 
     if statsViewer:GetIsVisible() then 
       statsViewer:SetVisible(false)
       statsViewer:SetStatsAggregator(nil)
@@ -122,9 +133,9 @@ function AddButton(statType, index)
   button:SetStatsAggregator(
     statsAggregatorManager:GetAggregator(statType))
   
-  local fraction = 1.0/StatsUtils.NumButtonTypes
-  local size = UDim2.new(fraction, 0, 0, StatsUtils.ButtonHeight)
-  local position = UDim2.new(fraction * (index - 1), 0, 0, 0)
+  local fraction = 1 / StatsUtils.NumButtonTypes
+  local size = UDim2_new(fraction, 0, 0, StatsUtils.ButtonHeight)
+  local position = UDim2_new(fraction * (index - 1), 0, 0, 0)
   button:SetSizeAndPosition(size, position)
   
   button:SetToggleCallbackFunction(OnButtonToggled)
@@ -134,8 +145,8 @@ function ConfigureStatViewerInMasterFrame()
   -- Set up the widget that shows currently selected button.
   statsViewer:SetParent(masterFrame)
   
-  local size = UDim2.new(0, StatsUtils.ViewerWidth, 0, StatsUtils.ViewerHeight)
-  local position = UDim2.new(1, -StatsUtils.ViewerWidth, 
+  local size = UDim2_new(0, StatsUtils.ViewerWidth, 0, StatsUtils.ViewerHeight)
+  local position = UDim2_new(1, -StatsUtils.ViewerWidth, 
     0, StatsUtils.ButtonHeight + StatsUtils.ViewerTopMargin)
   
   statsViewer:SetSizeAndPosition(size, position)
@@ -144,7 +155,7 @@ end
 function UpdatePerformanceStatsVisibility() 
   local shouldBeVisible = StatsUtils.PerformanceStatsShouldBeVisible()
   
-  if (shouldBeVisible == masterFrame.Visible) then 
+  if shouldBeVisible == masterFrame.Visible then 
     return
   end
   
@@ -183,7 +194,7 @@ ConfigureStatViewerInMasterFrame()
 
 
 -- Watch for changes in performance stats visibility.
-GameSettings.PerformanceStatsVisibleChanged:connect(
+GameSettings.PerformanceStatsVisibleChanged:Connect(
   UpdatePerformanceStatsVisibility)
 
 -- Make sure we're showing buttons and viewer based on current selection.
@@ -197,7 +208,7 @@ UpdatePerformanceStatsVisibility()
 spawn(function()
     local localPlayer = PlayersService.LocalPlayer
     while not localPlayer do
-      PlayersService.PlayerAdded:wait()
+      PlayersService.PlayerAdded:Wait()
       localPlayer = PlayersService.LocalPlayer
     end
     UpdatePerformanceStatsVisibility()

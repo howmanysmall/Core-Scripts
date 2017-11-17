@@ -5,6 +5,47 @@
 		// Written by: jeditkacheff/jmargh
 		// Description: Handles in game purchases
 ]]--
+
+local game = game
+local spawn = spawn
+local tick = tick
+local wait = wait
+local print, warn = print, warn
+local type = type
+local pcall = pcall
+local require = require
+local tostring, tonumber = tostring, tonumber
+local pairs = pairs
+local select = select
+--@".new" stuff or whatever
+local UDim2 = UDim2 local UDim2_new = UDim2.new
+local Instance = Instance local Instance_new = Instance.new
+local Color3 = Color3 local Color3_new = Color3.new local RGB = Color3.fromRGB
+local Vector2 = Vector2 local Vector2_new = Vector2.new
+--@enums, math, tables, etc
+local math = math
+	local abs = math.abs
+local table = table
+	local sort = table.sort
+local Enum = Enum
+	local TextXAlignment, TextYAlignment = Enum.TextXAlignment, Enum.TextYAlignment
+	local Font = Enum.Font
+	local SizeConstraint = Enum.SizeConstraint
+	local UserInputType, UserInputState = Enum.UserInputType, Enum.UserInputState
+	local KeyCode = Enum.KeyCode
+	local CurrencyType = Enum.CurrencyType
+	local Platform = Enum.Platform
+	local MembershipType = Enum.MembershipType
+	local EasingDirection, EasingStyle = Enum.EasingDirection, Enum.EasingStyle
+	local OverrideMouseIconBehavior = Enum.OverrideMouseIconBehavior
+	local ThrottlingPriority = Enum.ThrottlingPriority
+	local HttpRequestType, HttpContentType = Enum.HttpRequestType, Enum.HttpContentType
+	local InfoType = Enum.InfoType
+--@services
+local Workspace = game:GetService("Workspace")
+local ContentProvider = game:GetService("ContentProvider")
+local ContextActionService = game:GetService("ContextActionService")
+
 local success, result = pcall(function() return settings():GetFFlag('UsePurchasePromptLocalization') end)
 local FFlagUsePurchasePromptLocalization = success and result
 
@@ -38,10 +79,10 @@ local ThirdPartyProductName = nil
 
 --[[ Flags ]]--
 local platform = UserInputService:GetPlatform()
-local IsNativePurchasing = platform == Enum.Platform.XBoxOne or 
-							platform == Enum.Platform.IOS or 
-							platform == Enum.Platform.Android or
-							platform == Enum.Platform.UWP
+local IsNativePurchasing = platform == Platform.XBoxOne or 
+							platform == Platform.IOS or 
+							platform == Platform.Android or
+							platform == Platform.UWP
 
 local IsCurrentlyPrompting = false
 local IsCurrentlyPurchasing = false
@@ -54,8 +95,8 @@ local isTenFootInterface = TenFootInterface:IsEnabled()
 local freezeControllerActionName = "doNothingActionPrompt"
 local freezeThumbstick1Name = "doNothingThumbstickPrompt"
 local freezeThumbstick2Name = "doNothingThumbstickPrompt"
-local _,largeFont = pcall(function() return Enum.FontSize.Size42 end)
-largeFont = largeFont or Enum.FontSize.Size36
+local _, largeFont = pcall(function() return 42 end)
+largeFont = largeFont or 36
 local scaleFactor = 3
 local purchaseState = nil
 
@@ -70,9 +111,10 @@ local PurchaseData = {
 }
 
 --[[ Constants ]]--
-local BASE_URL = game:GetService('ContentProvider').BaseUrl:lower()
-BASE_URL = string.gsub(BASE_URL, "/m.", "/www.")
-local THUMBNAIL_URL = BASE_URL.."thumbs/asset.ashx?assetid="
+local BASE_URL = ContentProvider.BaseUrl:lower()
+BASE_URL = BASE_URL:gsub("/m.", "/www.")
+--BASE_URL = string.gsub(BASE_URL, "/m.", "/www.")
+local THUMBNAIL_URL = BASE_URL .. "thumbs/asset.ashx?assetid="
 -- Images
 local BG_IMAGE = 'rbxasset://textures/ui/Modal.png'
 local PURCHASE_BG = 'rbxasset://textures/ui/LoadingBKG.png'
@@ -91,7 +133,7 @@ local DEFAULT_XBOX_IMAGE = 'rbxasset://textures/ui/Shell/Icons/ROBUXIcon@1080.pn
 --Context Actions
 local CONTROLLER_CONFIRM_ACTION_NAME = "CoreScriptPurchasePromptControllerConfirm"
 local CONTROLLER_CANCEL_ACTION_NAME = "CoreScriptPurchasePromptControllerCancel"
-local GAMEPAD_BUTTONS = {}
+local GAMEPAD_BUTTONS = { }
 
 local ERROR_MSG = {
 	PURCHASE_DISABLED = "In-game purchases are temporarily disabled",
@@ -123,7 +165,7 @@ local PURCHASE_FAILED = {
 	LIMITED = 7,
 	DID_NOT_BUY_ROBUX = 8,
 	PROMPT_PURCHASE_ON_GUEST = 9,
-	THIRD_PARTY_DISABLED = 10,
+	THIRD_PARTY_DISABLED = 10
 }
 local PURCHASE_STATE = {
 	DEFAULT = 1,
@@ -137,12 +179,12 @@ local PURCHASE_STATE = {
 
 local function studioMockPurchasesEnabled()
 	local result = false
-	pcall(function() result = settings():GetFFlag("StudioMockPurchasesEnabled") and settings():GetFFlag("StudioUseMarketplaceApiClient") and game:GetService("RunService"):IsStudio() end)
+	pcall(function() result = settings():GetFFlag("StudioMockPurchasesEnabled") and settings():GetFFlag("StudioUseMarketplaceApiClient") and RunService:IsStudio() end)
 	return result
 end
 
 local function useNewMarketplaceMethods()
-	if game:GetService("RunService"):IsStudio() then
+	if RunService:IsStudio() then
 		flagExists, flagValue = pcall(function() return settings():GetFFlag("StudioUseMarketplaceApiClient") end)
 	else
 		flagExists, flagValue = pcall(function() return settings():GetFFlag("RCCUseMarketplaceApiClient") end)
@@ -153,82 +195,82 @@ end
 local BC_LVL_TO_STRING = {
 	"Builders Club",
 	"Turbo Builders Club",
-	"Outrageous Builders Club",
+	"Outrageous Builders Club"
 }
 local ASSET_TO_STRING = {
-	[1]  = "Image";
-	[2]  = "T-Shirt";
-	[3]  = "Audio";
-	[4]  = "Mesh";
-	[5]  = "Lua";
-	[6]  = "HTML";
-	[7]  = "Text";
-	[8]  = "Hat";
-	[9]  = "Place";
-	[10] = "Model";
-	[11] = "Shirt";
-	[12] = "Pants";
-	[13] = "Decal";
-	[16] = "Avatar";
-	[17] = "Head";
-	[18] = "Face";
-	[19] = "Gear";
-	[21] = "Badge";
-	[22] = "Group Emblem";
-	[24] = "Animation";
-	[25] = "Arms";
-	[26] = "Legs";
-	[27] = "Torso";
-	[28] = "Right Arm";
-	[29] = "Left Arm";
-	[30] = "Left Leg";
-	[31] = "Right Leg";
-	[32] = "Package";
-	[33] = "YouTube Video";
-	[34] = "Game Pass";	
-	[38] = "Plugin";
-	[39] = "SolidModel";
-	[40] = "MeshPart";
-	[41] = "Hair Accessory";
-	[42] = "Face Accessory";
-	[43] = "Neck Accessory";
-	[44] = "Shoulder Accessory";
-	[45] = "Front Accessory";
-	[46] = "Back Accessory";
-	[47] = "Waist Accessory";
-	[48] = "Climb Animation";
-	[50] = "Fall Animation";
-	[51] = "Idle Animation";
-	[52] = "Jump Animation";
-	[53] = "Run Animation";
-	[54] = "Swim Animation";
-	[55] = "Walk Animation";
-	[56] = "Pose Animation";
-	[57] = "Ear Accessory";
-	[58] = "Eye Accessory";
-	[0]  = "Product";
+	[1]  = "Image",
+	[2]  = "T-Shirt",
+	[3]  = "Audio",
+	[4]  = "Mesh",
+	[5]  = "Lua",
+	[6]  = "HTML",
+	[7]  = "Text",
+	[8]  = "Hat",
+	[9]  = "Place",
+	[10] = "Model",
+	[11] = "Shirt",
+	[12] = "Pants",
+	[13] = "Decal",
+	[16] = "Avatar",
+	[17] = "Head",
+	[18] = "Face",
+	[19] = "Gear",
+	[21] = "Badge",
+	[22] = "Group Emblem",
+	[24] = "Animation",
+	[25] = "Arms",
+	[26] = "Legs",
+	[27] = "Torso",
+	[28] = "Right Arm",
+	[29] = "Left Arm",
+	[30] = "Left Leg",
+	[31] = "Right Leg",
+	[32] = "Package",
+	[33] = "YouTube Video",
+	[34] = "Game Pass",
+	[38] = "Plugin",
+	[39] = "SolidModel",
+	[40] = "MeshPart",
+	[41] = "Hair Accessory",
+	[42] = "Face Accessory",
+	[43] = "Neck Accessory",
+	[44] = "Shoulder Accessory",
+	[45] = "Front Accessory",
+	[46] = "Back Accessory",
+	[47] = "Waist Accessory",
+	[48] = "Climb Animation",
+	[50] = "Fall Animation",
+	[51] = "Idle Animation",
+	[52] = "Jump Animation",
+	[53] = "Run Animation",
+	[54] = "Swim Animation",
+	[55] = "Walk Animation",
+	[56] = "Pose Animation",
+	[57] = "Ear Accessory",
+	[58] = "Eye Accessory",
+	[0]  = "Product"
 	-- NOTE: GamePass and Plugin AssetTypeIds are now in sync on ST1, ST2 and ST3
 }
 
 local BC_ROBUX_PRODUCTS = { 90, 180, 270, 360, 450, 1000, 2750 }
 local NON_BC_ROBUX_PRODUCTS = { 80, 160, 240, 320, 400, 800, 2000 }
 
-local DIALOG_SIZE = UDim2.new(0, 324, 0, 180)
-local DIALOG_SIZE_TENFOOT = UDim2.new(0, 324*scaleFactor, 0, 180*scaleFactor)
-local SHOW_POSITION = UDim2.new(0.5, -162, 0.5, -90)
-local SHOW_POSITION_TENFOOT = UDim2.new(0.5, -162*scaleFactor, 0.5, -90*scaleFactor)
-local HIDE_POSITION = UDim2.new(0.5, -162, 0, -181)
-local HIDE_POSITION_TENFOOT = UDim2.new(0.5, -162*scaleFactor, 0, -180*scaleFactor - 1)
-local BTN_SIZE = UDim2.new(0, 162, 0, 44)
-local BTN_SIZE_TENFOOT = UDim2.new(0, 162*scaleFactor, 0, 44*scaleFactor)
-local BODY_SIZE = UDim2.new(0, 324, 0, 136)
-local BODY_SIZE_TENFOOT = UDim2.new(0, 324*scaleFactor, 0, 136*scaleFactor)
+local DIALOG_SIZE = UDim2_new(0, 324, 0, 180)
+local DIALOG_SIZE_TENFOOT = UDim2_new(0, 324 * scaleFactor, 0, 180 * scaleFactor)
+local SHOW_POSITION = UDim2_new(0.5, -162, 0.5, -90)
+local SHOW_POSITION_TENFOOT = UDim2_new(0.5, -162 * scaleFactor, 0.5, -90 * scaleFactor)
+local HIDE_POSITION = UDim2_new(0.5, -162, 0, -181)
+local HIDE_POSITION_TENFOOT = UDim2_new(0.5, -162 * scaleFactor, 0, -180 * scaleFactor - 1)
+local BTN_SIZE = UDim2_new(0, 162, 0, 44)
+local BTN_SIZE_TENFOOT = UDim2_new(0, 162 * scaleFactor, 0, 44 * scaleFactor)
+local BODY_SIZE = UDim2_new(0, 324, 0, 136)
+local BODY_SIZE_TENFOOT = UDim2_new(0, 324 * scaleFactor, 0, 136 * scaleFactor)
 local TWEEN_TIME = 0.3
 
-local BTN_L_POS = UDim2.new(0, 0, 0, 136)
-local BTN_L_POS_TENFOOT = UDim2.new(0, 0, 0, 136*scaleFactor)
-local BTN_R_POS = UDim2.new(0.5, 0, 0, 136)
-local BTN_R_POS_TENFOOT = UDim2.new(0.5, 0, 0, 136*scaleFactor)
+local BTN_L_POS = UDim2_new(0, 0, 0, 136)
+local BTN_L_POS_TENFOOT = UDim2_new(0, 0, 0, 136 * scaleFactor)
+local BTN_R_POS = UDim2_new(0.5, 0, 0, 136)
+local BTN_R_POS_TENFOOT = UDim2_new(0.5, 0, 0, 136 * scaleFactor)
 
 --[[ Utility Functions ]]--
 local function lerp( start, finish, t)
@@ -241,12 +283,12 @@ end
 
 --[[ Gui Creation Functions ]]--
 local function createFrame(name, size, position, bgTransparency, bgColor)
-	local frame = Instance.new('Frame')
+	local frame = Instance_new('Frame')
 	frame.Name = name
 	frame.Size = size
-	frame.Position = position or UDim2.new(0, 0, 0, 0)
+	frame.Position = position or UDim2_new(0, 0, 0, 0)
 	frame.BackgroundTransparency = bgTransparency
-	frame.BackgroundColor3 = bgColor or Color3.new()
+	frame.BackgroundColor3 = bgColor or Color3_new()
 	frame.BorderSizePixel = 0
 	frame.ZIndex = 8
 
@@ -254,14 +296,14 @@ local function createFrame(name, size, position, bgTransparency, bgColor)
 end
 
 local function createTextLabel(name, size, position, font, fontSize, text)
-	local textLabel = Instance.new('TextLabel')
+	local textLabel = Instance_new('TextLabel')
 	textLabel.Name = name
-	textLabel.Size = size or UDim2.new(0, 0, 0, 0)
+	textLabel.Size = size or UDim2_new(0, 0, 0, 0)
 	textLabel.Position = position
 	textLabel.BackgroundTransparency = 1
 	textLabel.Font = font
-	textLabel.FontSize = fontSize
-	textLabel.TextColor3 = Color3.new(1, 1, 1)
+	textLabel.TextSize = fontSize
+	textLabel.TextColor3 = Color3_new(1, 1, 1)
 	textLabel.Text = text
 	textLabel.ZIndex = 8
 
@@ -269,7 +311,7 @@ local function createTextLabel(name, size, position, font, fontSize, text)
 end
 
 local function createImageLabel(name, size, position, image)
-	local imageLabel = Instance.new('ImageLabel')
+	local imageLabel = Instance_new('ImageLabel')
 	imageLabel.Name = name
 	imageLabel.Size = size
 	imageLabel.BackgroundTransparency = 1
@@ -280,7 +322,7 @@ local function createImageLabel(name, size, position, image)
 end
 
 local function createImageButtonWithText(name, position, image, imageDown, text, font)
-	local imageButton = Instance.new('ImageButton')
+	local imageButton = Instance_new('ImageButton')
 	imageButton.Name = name
 	imageButton.Size = isTenFootInterface and BTN_SIZE_TENFOOT or BTN_SIZE
 	imageButton.Position = position
@@ -292,26 +334,27 @@ local function createImageButtonWithText(name, position, image, imageDown, text,
 
 	local textLabel = nil
 	if FFlagUsePurchasePromptLocalization then
-		textLabel = createTextLabel(name.."Text", UDim2.new(0.6, 0, 0.8, 0), UDim2.new(0.2, 0, 0.1, 0), font, isTenFootInterface and largeFont or Enum.FontSize.Size24, text)
+		textLabel = createTextLabel(name .. "Text", UDim2_new(0.6, 0, 0.8, 0), UDim2_new(0.2, 0, 0.1, 0), font, isTenFootInterface and largeFont or 24, text)
 		textLabel.ZIndex = 9
 		textLabel.Parent = imageButton
 		textLabel.TextScaled = true
 		textLabel.TextWrapped = true
-		local textSizeConstraint = Instance.new("UITextSizeConstraint",textLabel)
+		local textSizeConstraint = Instance_new("UITextSizeConstraint")
 		textSizeConstraint.MaxTextSize = textLabel.TextSize
+		textSizeConstraint.Parent = textLabel
 	else
-		textLabel = createTextLabel(name.."Text", UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), font, isTenFootInterface and largeFont or Enum.FontSize.Size24, text)
+		textLabel = createTextLabel(name .. "Text", UDim2_new(1, 0, 1, 0), UDim2_new(0, 0, 0, 0), font, isTenFootInterface and largeFont or 24, text)
 		textLabel.ZIndex = 9
 		textLabel.Parent = imageButton
 	end
 
-	imageButton.MouseEnter:connect(function()
+	imageButton.MouseEnter:Connect(function()
 		imageButton.Image = imageDown
 	end)
-	imageButton.MouseLeave:connect(function()
+	imageButton.MouseLeave:Connect(function()
 		imageButton.Image = image
 	end)
-	imageButton.MouseButton1Click:connect(function()
+	imageButton.MouseButton1Click:Connect(function()
 		imageButton.Image = image
 	end)
 
@@ -323,151 +366,159 @@ local PurchaseDialog = isTenFootInterface and createFrame("PurchaseDialog", DIAL
 PurchaseDialog.Visible = false
 PurchaseDialog.Parent = RobloxGui
 
-	local ContainerFrame = createFrame("ContainerFrame", UDim2.new(1, 0, 1, 0), nil, 1, nil)
+	local ContainerFrame = createFrame("ContainerFrame", UDim2_new(1, 0, 1, 0), nil, 1, nil)
 	ContainerFrame.Parent = PurchaseDialog
 
-		local ContainerImage = createImageLabel("ContainerImage", isTenFootInterface and BODY_SIZE_TENFOOT or BODY_SIZE, UDim2.new(0, 0, 0, 0), BG_IMAGE)
+		local ContainerImage = createImageLabel("ContainerImage", isTenFootInterface and BODY_SIZE_TENFOOT or BODY_SIZE, UDim2_new(0, 0, 0, 0), BG_IMAGE)
 		ContainerImage.ZIndex = 8
 		ContainerImage.Parent = ContainerFrame
 
-		local ItemPreviewImage = isTenFootInterface and createImageLabel("ItemPreviewImage", UDim2.new(0, 64*scaleFactor, 0, 64*scaleFactor), UDim2.new(0, 27*scaleFactor, 0, 20*scaleFactor), "") or createImageLabel("ItemPreviewImage", UDim2.new(0, 64, 0, 64), UDim2.new(0, 27, 0, 20), "")
+		local ItemPreviewImage = isTenFootInterface and createImageLabel("ItemPreviewImage", UDim2_new(0, 64 * scaleFactor, 0, 64 * scaleFactor), UDim2_new(0, 27 * scaleFactor, 0, 20 * scaleFactor), "") or createImageLabel("ItemPreviewImage", UDim2_new(0, 64, 0, 64), UDim2_new(0, 27, 0, 20), "")
 		ItemPreviewImage.ZIndex = 9
 		ItemPreviewImage.Parent = ContainerFrame
 		
 		local ItemDescriptionText_str = PURCHASE_MSG.PURCHASE
 		if FFlagUsePurchasePromptLocalization then
-			ItemDescriptionText_str = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.PURCHASE",ItemDescriptionText_str)
+			ItemDescriptionText_str = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.PURCHASE", ItemDescriptionText_str)
 		end
 		
 		local ItemDescriptionText = createTextLabel(
 			"ItemDescriptionText", 
-			isTenFootInterface and UDim2.new(0, 210*scaleFactor - 20, 0, 96*scaleFactor) or UDim2.new(0, 210, 0, 96),
-			isTenFootInterface and UDim2.new(0, 110*scaleFactor, 0, 18*scaleFactor) or UDim2.new(0, 110, 0, 18),
-			Enum.Font.SourceSans, 
-			isTenFootInterface and Enum.FontSize.Size48 or Enum.FontSize.Size18, 
+			isTenFootInterface and UDim2_new(0, 210 * scaleFactor - 20, 0, 96 * scaleFactor) or UDim2_new(0, 210, 0, 96),
+			isTenFootInterface and UDim2_new(0, 110 * scaleFactor, 0, 18 * scaleFactor) or UDim2_new(0, 110, 0, 18),
+			Font.SourceSans, 
+			isTenFootInterface and 48 or 18, 
 			ItemDescriptionText_str
 		)
-		ItemDescriptionText.TextXAlignment = Enum.TextXAlignment.Left
-		ItemDescriptionText.TextYAlignment = Enum.TextYAlignment.Top
+		ItemDescriptionText.TextXAlignment = TextXAlignment.Left
+		ItemDescriptionText.TextYAlignment = TextYAlignment.Top
 		ItemDescriptionText.TextWrapped = true
 		ItemDescriptionText.Parent = ContainerFrame
 
-		local RobuxIcon = createImageLabel("RobuxIcon", isTenFootInterface and UDim2.new(0, 20*scaleFactor, 0, 20*scaleFactor) or UDim2.new(0, 20, 0, 20), UDim2.new(0, 0, 0, 0), ROBUX_ICON)
+		local RobuxIcon = createImageLabel("RobuxIcon", isTenFootInterface and UDim2_new(0, 20 * scaleFactor, 0, 20 * scaleFactor) or UDim2_new(0, 20, 0, 20), UDim2_new(0, 0, 0, 0), ROBUX_ICON)
 		RobuxIcon.ZIndex = 9
 		RobuxIcon.Visible = false
 		RobuxIcon.Parent = ContainerFrame
-
-		local TixIcon = createImageLabel("TixIcon", isTenFootInterface and UDim2.new(0, 20*scaleFactor, 0, 20*scaleFactor) or UDim2.new(0, 20, 0, 20), UDim2.new(0, 0, 0, 0), TIX_ICON)
+		--rest in peace.
+		local TixIcon = createImageLabel("TixIcon", isTenFootInterface and UDim2_new(0, 20 * scaleFactor, 0, 20 * scaleFactor) or UDim2_new(0, 20, 0, 20), UDim2_new(0, 0, 0, 0), TIX_ICON)
 		TixIcon.ZIndex = 9
 		TixIcon.Visible = false
 		TixIcon.Parent = ContainerFrame
 
-		local CostText = createTextLabel("CostText", UDim2.new(0, 0, 0, 0), UDim2.new(0, 0, 0, 0),
-			Enum.Font.SourceSansBold, isTenFootInterface and largeFont or Enum.FontSize.Size18, "")
-		CostText.TextXAlignment = Enum.TextXAlignment.Left
+		local CostText = createTextLabel("CostText", UDim2_new(0, 0, 0, 0), UDim2_new(0, 0, 0, 0),
+			Font.SourceSansBold, isTenFootInterface and largeFont or 18, "")
+		CostText.TextXAlignment = TextXAlignment.Left
 		CostText.Visible = false
 		CostText.Parent = ContainerFrame
 
-		local PostBalanceText = createTextLabel("PostBalanceText", UDim2.new(1, -20, 0, 30), isTenFootInterface and UDim2.new(0, 10, 0, 100*scaleFactor) or UDim2.new(0, 10, 0, 100), Enum.Font.SourceSans,
-			isTenFootInterface and Enum.FontSize.Size36 or Enum.FontSize.Size14, "")
+		local PostBalanceText = createTextLabel("PostBalanceText", UDim2_new(1, -20, 0, 30), isTenFootInterface and UDim2_new(0, 10, 0, 100 * scaleFactor) or UDim2_new(0, 10, 0, 100), Font.SourceSans,
+			isTenFootInterface and 36 or 14, "")
 		PostBalanceText.TextWrapped = true
 		PostBalanceText.Parent = ContainerFrame
 
-		local BuyButton = createImageButtonWithText("BuyButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, "Buy Now", Enum.Font.SourceSansBold)
+		local BuyButton = createImageButtonWithText("BuyButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, "Buy Now", Font.SourceSansBold)
 		BuyButton.Parent = ContainerFrame
 		local BuyButtonText = BuyButton:FindFirstChild("BuyButtonText")
 		
-		local gamepadButtonXLocation = (BuyButton.AbsoluteSize.X/2 - BuyButtonText.TextBounds.X/2)/2
-		local buyButtonGamepadImage = Instance.new("ImageLabel")
+		local gamepadButtonXLocation = (BuyButton.AbsoluteSize.X * 0.5 - BuyButtonText.TextBounds.X * 0.5) * 0.5
+		local buyButtonGamepadImage = Instance_new("ImageLabel")
 		if FFlagUsePurchasePromptLocalization then
 			buyButtonGamepadImage.BackgroundTransparency = 1
 			buyButtonGamepadImage.Image = A_BUTTON
-			buyButtonGamepadImage.Size = UDim2.new(0.75, -8, 0.75, -8)
-			buyButtonGamepadImage.SizeConstraint = Enum.SizeConstraint.RelativeYY
+			buyButtonGamepadImage.Size = UDim2_new(0.75, -8, 0.75, -8)
+			buyButtonGamepadImage.SizeConstraint = SizeConstraint.RelativeYY
 			buyButtonGamepadImage.Parent = BuyButton
-			buyButtonGamepadImage.Position = UDim2.new(0, buyButtonGamepadImage.AbsoluteSize.x * 0.65, 0.5, 0)
-			buyButtonGamepadImage.AnchorPoint = Vector2.new(0.5,0.5)
+			buyButtonGamepadImage.Position = UDim2_new(0, buyButtonGamepadImage.AbsoluteSize.x * 0.65, 0.5, 0)
+			buyButtonGamepadImage.AnchorPoint = Vector2_new(0.5, 0.5)
 			buyButtonGamepadImage.Visible = false
 			buyButtonGamepadImage.ZIndex = BuyButton.ZIndex
-			table.insert(GAMEPAD_BUTTONS, buyButtonGamepadImage)
+			GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = buyButtonGamepadImage
+		--	table.insert(GAMEPAD_BUTTONS, buyButtonGamepadImage)
 		else
 			buyButtonGamepadImage.BackgroundTransparency = 1
 			buyButtonGamepadImage.Image = A_BUTTON
-			buyButtonGamepadImage.Size = UDim2.new(1, -8, 1, -8)
-			buyButtonGamepadImage.SizeConstraint = Enum.SizeConstraint.RelativeYY
+			buyButtonGamepadImage.Size = UDim2_new(1, -8, 1, -8)
+			buyButtonGamepadImage.SizeConstraint = SizeConstraint.RelativeYY
 			buyButtonGamepadImage.Parent = BuyButton
-			buyButtonGamepadImage.Position = UDim2.new(0, gamepadButtonXLocation - buyButtonGamepadImage.AbsoluteSize.X/2, 0, 5)
+			buyButtonGamepadImage.Position = UDim2_new(0, gamepadButtonXLocation - buyButtonGamepadImage.AbsoluteSize.X * 0.5, 0, 5)
 			buyButtonGamepadImage.Visible = false
 			buyButtonGamepadImage.ZIndex = BuyButton.ZIndex
-			table.insert(GAMEPAD_BUTTONS, buyButtonGamepadImage)
+			GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = buyButtonGamepadImage
+		--	table.insert(GAMEPAD_BUTTONS, buyButtonGamepadImage)
 		end
 
-		local CancelButton = createImageButtonWithText("CancelButton", isTenFootInterface and BTN_R_POS_TENFOOT or BTN_R_POS, BUTTON_RIGHT, BUTTON_RIGHT_DOWN, "Cancel", Enum.Font.SourceSans)
+		local CancelButton = createImageButtonWithText("CancelButton", isTenFootInterface and BTN_R_POS_TENFOOT or BTN_R_POS, BUTTON_RIGHT, BUTTON_RIGHT_DOWN, "Cancel", Font.SourceSans)
 		CancelButton.Parent = ContainerFrame
 
 		local cancelButtonGamepadImage = buyButtonGamepadImage:Clone()
 		cancelButtonGamepadImage.Image = B_BUTTON
 		cancelButtonGamepadImage.ZIndex = CancelButton.ZIndex
 		cancelButtonGamepadImage.Parent = CancelButton
-		table.insert(GAMEPAD_BUTTONS, cancelButtonGamepadImage)
+		GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = cancelButtonGamepadImage
+	--	table.insert(GAMEPAD_BUTTONS, cancelButtonGamepadImage)
 
 		local BuyRobuxButton = createImageButtonWithText("BuyRobuxButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, IsNativePurchasing and "Buy" or "Buy R$",
-			Enum.Font.SourceSansBold)
+			Font.SourceSansBold)
 		BuyRobuxButton.Visible = false
 		BuyRobuxButton.Parent = ContainerFrame
 
 		local buyRobuxGamepadImage = buyButtonGamepadImage:Clone()
 		buyRobuxGamepadImage.ZIndex = BuyRobuxButton.ZIndex
 		buyRobuxGamepadImage.Parent = BuyRobuxButton
-		table.insert(GAMEPAD_BUTTONS, buyRobuxGamepadImage)
+		GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = buyRobuxGamepadImage
+	--	table.insert(GAMEPAD_BUTTONS, buyRobuxGamepadImage)
 
-		local BuyBCButton = createImageButtonWithText("BuyBCButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, "Upgrade", Enum.Font.SourceSansBold)
+		local BuyBCButton = createImageButtonWithText("BuyBCButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, "Upgrade", Font.SourceSansBold)
 		BuyBCButton.Visible = false
 		BuyBCButton.Parent = ContainerFrame
 
 		local buyBCGamepadImage = buyButtonGamepadImage:Clone()
 		buyBCGamepadImage.ZIndex = BuyBCButton.ZIndex
 		buyBCGamepadImage.Parent = BuyBCButton
-		table.insert(GAMEPAD_BUTTONS, buyBCGamepadImage)
+		GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = buyBCGamepadImage
+	--	table.insert(GAMEPAD_BUTTONS, buyBCGamepadImage)
 
-		local FreeButton = createImageButtonWithText("FreeButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, "Take Free", Enum.Font.SourceSansBold)
+		local FreeButton = createImageButtonWithText("FreeButton", isTenFootInterface and BTN_L_POS_TENFOOT or BTN_L_POS, BUTTON_LEFT, BUTTON_LEFT_DOWN, "Take Free", Font.SourceSansBold)
 		FreeButton.Visible = false
 		FreeButton.Parent = ContainerFrame
 
-		local OkButton = createImageButtonWithText("OkButton", isTenFootInterface and UDim2.new(0, 2, 0, 136*scaleFactor) or UDim2.new(0, 2, 0, 136), BUTTON, BUTTON_DOWN, "OK", Enum.Font.SourceSans)
-		OkButton.Size = isTenFootInterface and UDim2.new(0, 320*scaleFactor, 0, 44*scaleFactor) or UDim2.new(0, 320, 0, 44)
+		local OkButton = createImageButtonWithText("OkButton", isTenFootInterface and UDim2_new(0, 2, 0, 136 * scaleFactor) or UDim2_new(0, 2, 0, 136), BUTTON, BUTTON_DOWN, "OK", Font.SourceSans)
+		OkButton.Size = isTenFootInterface and UDim2_new(0, 320 * scaleFactor, 0, 44 * scaleFactor) or UDim2_new(0, 320, 0, 44)
 		OkButton.Visible = false
 		OkButton.Parent = ContainerFrame
 
 		local okButtonGamepadImage = buyButtonGamepadImage:Clone()
 		okButtonGamepadImage.ZIndex = OkButton.ZIndex
 		okButtonGamepadImage.Parent = OkButton
-		table.insert(GAMEPAD_BUTTONS, okButtonGamepadImage)
+		GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = okButtonGamepadImage
+	--	table.insert(GAMEPAD_BUTTONS, okButtonGamepadImage)
 
-		local OkPurchasedButton = createImageButtonWithText("OkPurchasedButton", isTenFootInterface and UDim2.new(0, 2, 0, 136*scaleFactor) or UDim2.new(0, 2, 0, 136), BUTTON, BUTTON_DOWN, "OK", Enum.Font.SourceSans)
-		OkPurchasedButton.Size = isTenFootInterface and UDim2.new(0, 320*scaleFactor, 0, 44*scaleFactor) or UDim2.new(0, 320, 0, 44)
+		local OkPurchasedButton = createImageButtonWithText("OkPurchasedButton", isTenFootInterface and UDim2_new(0, 2, 0, 136 * scaleFactor) or UDim2_new(0, 2, 0, 136), BUTTON, BUTTON_DOWN, "OK", Font.SourceSans)
+		OkPurchasedButton.Size = isTenFootInterface and UDim2_new(0, 320 * scaleFactor, 0, 44 * scaleFactor) or UDim2_new(0, 320, 0, 44)
 		OkPurchasedButton.Visible = false
 		OkPurchasedButton.Parent = ContainerFrame
 
 		local okPurchasedGamepadImage = buyButtonGamepadImage:Clone()
 		okPurchasedGamepadImage.ZIndex = OkPurchasedButton.ZIndex
 		okPurchasedGamepadImage.Parent = OkPurchasedButton
-		table.insert(GAMEPAD_BUTTONS, okPurchasedGamepadImage)
+		GAMEPAD_BUTTONS[#GAMEPAD_BUTTONS + 1] = okPurchasedGamepadImage
+	--	table.insert(GAMEPAD_BUTTONS, okPurchasedGamepadImage)
 
-	local PurchaseFrame = createImageLabel("PurchaseFrame", UDim2.new(1, 0, 1, 0), UDim2.new(0, 0, 0, 0), PURCHASE_BG)
+	local PurchaseFrame = createImageLabel("PurchaseFrame", UDim2_new(1, 0, 1, 0), UDim2_new(0, 0, 0, 0), PURCHASE_BG)
 	PurchaseFrame.ZIndex = 8
 	PurchaseFrame.Visible = false
 	PurchaseFrame.Parent = PurchaseDialog
 
-		local PurchaseText = createTextLabel("PurchaseText", nil, UDim2.new(0.5, 0, 0.5, -36), Enum.Font.SourceSans,
-			isTenFootInterface and largeFont or Enum.FontSize.Size36, "Purchasing")
+		local PurchaseText = createTextLabel("PurchaseText", nil, UDim2_new(0.5, 0, 0.5, -36), Font.SourceSans,
+			isTenFootInterface and largeFont or 36, "Purchasing")
 		PurchaseText.Parent = PurchaseFrame
 
-		local LoadingFrames = {}
+		local LoadingFrames = { }
 		local xOffset = -40
 		for i = 1, 3 do
-			local frame = createFrame("Loading", UDim2.new(0, 16, 0, 16), UDim2.new(0.5, xOffset, 0.5, 0), 0, Color3.new(132/255, 132/255, 132/255))
-			table.insert(LoadingFrames, frame)
+			local frame = createFrame("Loading", UDim2_new(0, 16, 0, 16), UDim2_new(0.5, xOffset, 0.5, 0), 0, RGB(132, 132, 132))
+			LoadingFrames[#LoadingFrames + 1] = frame
+		--	table.insert(LoadingFrames, frame)
 			frame.Parent = PurchaseFrame
 			xOffset = xOffset + 32
 		end
@@ -476,20 +527,20 @@ PurchaseDialog.Parent = RobloxGui
 local function noOpFunc() end
 
 local function enableControllerMovement()
-	game:GetService("ContextActionService"):UnbindCoreAction(freezeThumbstick1Name)
-	game:GetService("ContextActionService"):UnbindCoreAction(freezeThumbstick2Name)
-	game:GetService("ContextActionService"):UnbindCoreAction(freezeControllerActionName)
+	ContextActionService:UnbindCoreAction(freezeThumbstick1Name)
+	ContextActionService:UnbindCoreAction(freezeThumbstick2Name)
+	ContextActionService:UnbindCoreAction(freezeControllerActionName)
 end
 
 local function disableControllerMovement()
-	game:GetService("ContextActionService"):BindCoreAction(freezeControllerActionName, noOpFunc, false, Enum.UserInputType.Gamepad1)
-	game:GetService("ContextActionService"):BindCoreAction(freezeThumbstick1Name, noOpFunc, false, Enum.KeyCode.Thumbstick1)
-	game:GetService("ContextActionService"):BindCoreAction(freezeThumbstick2Name, noOpFunc, false, Enum.KeyCode.Thumbstick2)
+	ContextActionService:BindCoreAction(freezeControllerActionName, noOpFunc, false, UserInputType.Gamepad1)
+	ContextActionService:BindCoreAction(freezeThumbstick1Name, noOpFunc, false, KeyCode.Thumbstick1)
+	ContextActionService:BindCoreAction(freezeThumbstick2Name, noOpFunc, false, KeyCode.Thumbstick2)
 end
 
 --[[ Purchase Data Functions ]]--
 local function getCurrencyString(currencyType)
-	return currencyType == Enum.CurrencyType.Tix and "Tix" or "R$"
+	return currencyType == CurrencyType.Tix and "Tix" or "R$"
 end
 
 local function setInitialPurchaseData(assetId, productId, gamePassId, currencyType, equipOnPurchase)
@@ -507,7 +558,7 @@ local function setInitialPurchaseData(assetId, productId, gamePassId, currencyTy
 end
 
 local function setCurrencyData(playerBalance)
-	PurchaseData.CurrencyType = Enum.CurrencyType.Robux
+	PurchaseData.CurrencyType = CurrencyType.Robux
 	PurchaseData.CurrencyAmount = tonumber(PurchaseData.ProductInfo['PriceInRobux'])
 
 	if PurchaseData.CurrencyAmount == nil then
@@ -528,7 +579,8 @@ local function setPreviewImageXbox(productInfo, assetId)
 	end
 
 	local path = 'asset-thumbnail/json?assetId=%d&width=100&height=100&format=png'
-	path = BASE_URL..string.format(path, id)
+	path = BASE_URL .. path:format(id)
+--	path = BASE_URL .. string.format(path, id)
 	spawn(function()
 		-- check if thumb has been generated, if not generated or if anything fails
 		-- set to the default image
@@ -549,7 +601,7 @@ local function setPreviewImageXbox(productInfo, assetId)
 		end
 
 		if decodeResult["Final"] == true then
-			ItemPreviewImage.Image = THUMBNAIL_URL..tostring(id).."&x=100&y=100&format=png"
+			ItemPreviewImage.Image = THUMBNAIL_URL .. tostring(id) .. "&x=100&y=100&format=png"
 		else
 			ItemPreviewImage.Image = DEFAULT_XBOX_IMAGE
 		end
@@ -558,23 +610,23 @@ end
 
 local function setPreviewImage(productInfo, assetId)
 	-- For now let's only run this logic on Xbox
-	if platform == Enum.Platform.XBoxOne then
+	if platform == Platform.XBoxOne then
 		setPreviewImageXbox(productInfo, assetId)
 		return
 	end
 	if IsPurchasingConsumable then
 		if productInfo then
-			ItemPreviewImage.Image = THUMBNAIL_URL..tostring(productInfo["IconImageAssetId"].."&x=100&y=100&format=png")
+			ItemPreviewImage.Image = THUMBNAIL_URL .. tostring(productInfo["IconImageAssetId"] .. "&x=100&y=100&format=png")
 		end
 	else
 		if assetId then
-			ItemPreviewImage.Image = THUMBNAIL_URL..tostring(assetId).."&x=100&y=100&format=png"
+			ItemPreviewImage.Image = THUMBNAIL_URL .. tostring(assetId) .. "&x=100&y=100&format=png"
 		end
 	end
 end
 
 local function clearPurchaseData()
-	for k,v in pairs(PurchaseData) do
+	for k, _ in pairs(PurchaseData) do
 		PurchaseData[k] = nil
 	end
 	RobuxIcon.Visible = false
@@ -584,10 +636,10 @@ end
 
 --[[ Show Functions ]]--
 local function setButtonsVisible(...)
-	local args = {...}
+	local args = { ... }
 	local argCount = select('#', ...)
 
-	for _,child in pairs(ContainerFrame:GetChildren()) do
+	for _, child in pairs(ContainerFrame:GetChildren()) do
 		if child:IsA('ImageButton') then
 			child.Visible = false
 			for i = 1, argCount do
@@ -608,7 +660,7 @@ local function tweenBackgroundColor(frame, endColor, duration)
 		local r = lerp(startColor.r, endColor.r, s)
 		local g = lerp(startColor.g, endColor.g, s)
 		local b = lerp(startColor.b, endColor.b, s)
-		frame.BackgroundColor3 = Color3.new(r, g, b)
+		frame.BackgroundColor3 = Color3_new(r, g, b)
 		--
 		t = t + (tick() - prevTime)
 		prevTime = tick()
@@ -630,15 +682,15 @@ local function startPurchaseAnimation()
 		while isPurchaseAnimating do
 			local frame = LoadingFrames[i]
 			local prevPosition = frame.Position
-			local newPosition = UDim2.new(prevPosition.X.Scale, prevPosition.X.Offset, prevPosition.Y.Scale, prevPosition.Y.Offset - 2)
+			local newPosition = UDim2_new(prevPosition.X.Scale, prevPosition.X.Offset, prevPosition.Y.Scale, prevPosition.Y.Offset - 2)
 			spawn(function()
-				tweenBackgroundColor(frame, Color3.new(0, 162/255, 1), 0.25)
+				tweenBackgroundColor(frame, RGB(0, 162, 255), 0.25)
 			end)
-			frame:TweenSizeAndPosition(UDim2.new(0, 16, 0, 20), newPosition, Enum.EasingDirection.InOut, Enum.EasingStyle.Quad, 0.25, true, function()
+			frame:TweenSizeAndPosition(UDim2_new(0, 16, 0, 20), newPosition, EasingDirection.InOut, EasingStyle.Quad, 0.25, true, function()
 				spawn(function()
-					tweenBackgroundColor(frame, Color3.new(132/255, 132/255, 132/255), 0.25)
+					tweenBackgroundColor(frame, RGB(132, 132, 132), 0.25)
 				end)
-				frame:TweenSizeAndPosition(UDim2.new(0, 16, 0, 16), prevPosition, Enum.EasingDirection.InOut, Enum.EasingStyle.Quad, 0.25, true)
+				frame:TweenSizeAndPosition(UDim2_new(0, 16, 0, 16), prevPosition, EasingDirection.InOut, EasingStyle.Quad, 0.25, true)
 			end)
 			i = i + 1
 			if i > 3 then
@@ -657,15 +709,15 @@ local function stopPurchaseAnimation()
 end
 
 local function setPurchaseDataInGui(isFree, invalidBC)
-	local descriptionText = PurchaseData.CurrencyType == Enum.CurrencyType.Tix and PURCHASE_MSG.PURCHASE_TIX or PURCHASE_MSG.PURCHASE
+	local descriptionText = PurchaseData.CurrencyType == CurrencyType.Tix and PURCHASE_MSG.PURCHASE_TIX or PURCHASE_MSG.PURCHASE
 	if FFlagUsePurchasePromptLocalization then
-		descriptionText = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.PURCHASE",descriptionText)
+		descriptionText = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.PURCHASE", descriptionText)
 	end
 	
 	if isFree then
 		descriptionText = PURCHASE_MSG.FREE
 		if FFlagUsePurchasePromptLocalization then
-			descriptionText = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.FREE",descriptionText)
+			descriptionText = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.FREE", descriptionText)
 		end
 		
 		PostBalanceText.Text = PURCHASE_MSG.FREE_BALANCE
@@ -677,26 +729,30 @@ local function setPurchaseDataInGui(isFree, invalidBC)
 	end
 	local itemDescription = ""
 	if FFlagUsePurchasePromptLocalization then
-		itemDescription = string.gsub(descriptionText, "{RBX_NAME2}", string.sub(productInfo["Name"], 1, 20))
-		itemDescription = string.gsub(itemDescription, "{RBX_NAME1}", ASSET_TO_STRING[productInfo["AssetTypeId"]] or "Unknown")
+		itemDescription = descriptionText:gsub("{RBX_NAME2}", (productInfo["Name"]):sub(1, 20))
+		itemDescription = itemDescription:gsub("{RBX_NAME1}", ASSET_TO_STRING[productInfo["AssetTypeId"]] or "Unknown")
+	--	itemDescription = string.gsub(descriptionText, "{RBX_NAME2}", string.sub(productInfo["Name"], 1, 20))
+	--	itemDescription = string.gsub(itemDescription, "{RBX_NAME1}", ASSET_TO_STRING[productInfo["AssetTypeId"]] or "Unknown")
 	else
-		itemDescription = string.gsub(descriptionText, "itemName", string.sub(productInfo["Name"], 1, 20))
-		itemDescription = string.gsub(itemDescription, "assetType", ASSET_TO_STRING[productInfo["AssetTypeId"]] or "Unknown")
+		itemDescription = descriptionText:gsub("itemName", (productInfo["Name"]):sub(1, 20))
+		itemDescription = itemDescription:gsub("assetType", ASSET_TO_STRING[productInfo["AssetTypeId"]] or "Unknown")
+	--	itemDescription = string.gsub(descriptionText, "itemName", string.sub(productInfo["Name"], 1, 20))
+	--	itemDescription = string.gsub(itemDescription, "assetType", ASSET_TO_STRING[productInfo["AssetTypeId"]] or "Unknown")
 	end
 	ItemDescriptionText.Text = itemDescription
 
 	if not isFree then
-		if PurchaseData.CurrencyType == Enum.CurrencyType.Tix then
+		if PurchaseData.CurrencyType == CurrencyType.Tix then
 			TixIcon.Visible = true
-			TixIcon.Position = UDim2.new(0, isTenFootInterface and 110*scaleFactor or 110, 0, ItemDescriptionText.Position.Y.Offset + ItemDescriptionText.TextBounds.y + (isTenFootInterface and 6*scaleFactor or 6))
-			CostText.TextColor3 = Color3.new(204/255, 158/255, 113/255)
+			TixIcon.Position = UDim2_new(0, isTenFootInterface and 110 * scaleFactor or 110, 0, ItemDescriptionText.Position.Y.Offset + ItemDescriptionText.TextBounds.y + (isTenFootInterface and 6 * scaleFactor or 6))
+			CostText.TextColor3 = RGB(204, 158, 113)
 		else
 			RobuxIcon.Visible = true
-			RobuxIcon.Position = UDim2.new(0, isTenFootInterface and 110*scaleFactor or 110, 0, ItemDescriptionText.Position.Y.Offset + ItemDescriptionText.TextBounds.y + (isTenFootInterface and 6*scaleFactor or 6))
-			CostText.TextColor3 = Color3.new(2/255, 183/255, 87/255)
+			RobuxIcon.Position = UDim2_new(0, isTenFootInterface and 110 * scaleFactor or 110, 0, ItemDescriptionText.Position.Y.Offset + ItemDescriptionText.TextBounds.y + (isTenFootInterface and 6 * scaleFactor or 6))
+			CostText.TextColor3 = RGB(2, 183, 87)
 		end
 		CostText.Text = formatNumber(PurchaseData.CurrencyAmount)
-		CostText.Position = UDim2.new(0, isTenFootInterface and 134*scaleFactor or 134, 0, ItemDescriptionText.Position.Y.Offset + ItemDescriptionText.TextBounds.y + (isTenFootInterface and 15*scaleFactor or 15))
+		CostText.Position = UDim2_new(0, isTenFootInterface and 134 * scaleFactor or 134, 0, ItemDescriptionText.Position.Y.Offset + ItemDescriptionText.TextBounds.y + (isTenFootInterface and 15 * scaleFactor or 15))
 		CostText.Visible = true
 	end
 
@@ -707,10 +763,11 @@ local function setPurchaseDataInGui(isFree, invalidBC)
 
 	if invalidBC then
 		local neededBcLevel = PurchaseData.ProductInfo["MinimumMembershipLevel"]
-		PostBalanceText.Text = "This item requires "..BC_LVL_TO_STRING[neededBcLevel]..".\nClick 'Upgrade' to upgrade your Builders Club!"
+		PostBalanceText.Text = "This item requires " .. BC_LVL_TO_STRING[neededBcLevel] .. ".\nClick 'Upgrade' to upgrade your Builders Club!"
 		if FFlagUsePurchasePromptLocalization then
-			PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.setPurchaseDataInGui.invalidBC",PostBalanceText.Text)
-			PostBalanceText.Text = string.gsub(PostBalanceText.Text, "{RBX_NAME1}", BC_LVL_TO_STRING[neededBcLevel])
+			PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.setPurchaseDataInGui.invalidBC", PostBalanceText.Text)
+			PostBalanceText.Text = (PostBalanceText.Text):gsub("{RBX_NAME1}", BC_LVL_TO_STRING[neededBcLevel])
+		--	PostBalanceText.Text = string.gsub(PostBalanceText.Text, "{RBX_NAME1}", BC_LVL_TO_STRING[neededBcLevel])
 		end
 		purchaseState = PURCHASE_STATE.BUYBC
 		setButtonsVisible(BuyBCButton, CancelButton)
@@ -721,22 +778,23 @@ end
 local function getRobuxProduct(amountNeeded, isBCMember)
 	local productArray = nil
 
-	if platform == Enum.Platform.XBoxOne then
-		productArray = {}
+	if platform == Platform.XBoxOne then
+		productArray = { }
 		local platformCatalogData = require(RobloxGui.Modules.Shell.PlatformCatalogData)
 
 		local catalogInfo = platformCatalogData:GetCatalogInfoAsync()
 		if catalogInfo then
 			for _, productInfo in pairs(catalogInfo) do
 				local robuxValue = platformCatalogData:ParseRobuxValue(productInfo)
-				table.insert(productArray, robuxValue)
+				productArray[#productArray + 1] = robuxValue
+			--	table.insert(productArray, robuxValue)
 			end
 		end
 	else
 		productArray = isBCMember and BC_ROBUX_PRODUCTS or NON_BC_ROBUX_PRODUCTS
 	end
 
-	table.sort(productArray, function(a,b) return a < b end)
+	sort(productArray, function(a, b) return a < b end)
 
 	for i = 1, #productArray do
 		if productArray[i] >= amountNeeded then
@@ -748,7 +806,7 @@ local function getRobuxProduct(amountNeeded, isBCMember)
 end
 
 local function getRobuxProductToBuyItem(amountNeeded)
-	local isBCMember = Players.LocalPlayer.MembershipType ~= Enum.MembershipType.None
+	local isBCMember = Players.LocalPlayer.MembershipType ~= MembershipType.None
 
 	local productCost = getRobuxProduct(amountNeeded, isBCMember)
 	if not productCost then
@@ -758,7 +816,7 @@ local function getRobuxProductToBuyItem(amountNeeded)
 	--todo: we should clean all this up at some point so all the platforms have the
 	-- same product names, or at least names that are very similar
 	
-	local isUsingNewProductId = (platform == Enum.Platform.Android) or (platform == Enum.Platform.UWP)
+	local isUsingNewProductId = (platform == Platform.Android) or (platform == Platform.UWP)
 
 	local prependStr, appendStr, appPrefix = "", "", ""
 	if isUsingNewProductId then
@@ -767,7 +825,7 @@ local function getRobuxProductToBuyItem(amountNeeded)
 			appendStr = "bc"
 		end
 		appPrefix = "com.roblox.client."
-	elseif platform == Enum.Platform.XBoxOne then
+	elseif platform == Platform.XBoxOne then
 		local platformCatalogData = require(RobloxGui.Modules.Shell.PlatformCatalogData)
 
 		local catalogInfo = platformCatalogData:GetCatalogInfoAsync()
@@ -778,7 +836,7 @@ local function getRobuxProductToBuyItem(amountNeeded)
 				end
 			end
 		end
-	elseif platform == Enum.Platform.IOS then
+	elseif platform == Platform.IOS then
 		appendStr = isBCMember and "RobuxBC" or "RobuxNonBC"
 		appPrefix = "com.roblox.robloxmobile."
 	else
@@ -796,7 +854,8 @@ local function setBuyMoreRobuxDialog(playerBalance)
 	local productInfo = PurchaseData.ProductInfo
 
 	local descriptionText = "You need %s more ROBUX to buy the %s %s"
-	descriptionText = string.format(descriptionText, formatNumber(neededRobux), productInfo["Name"], ASSET_TO_STRING[productInfo["AssetTypeId"]] or "")
+	descriptionText = descriptionText:format(formatNumber(neededRobux), productInfo["Name"], ASSET_TO_STRING[productInfo["AssetTypeId"]] or "")
+--	descriptionText = string.format(descriptionText, formatNumber(neededRobux), productInfo["Name"], ASSET_TO_STRING[productInfo["AssetTypeId"]] or "")
 
 	purchaseState = PURCHASE_STATE.BUYROBUX
 	setButtonsVisible(BuyRobuxButton, CancelButton)
@@ -816,28 +875,30 @@ local function setBuyMoreRobuxDialog(playerBalance)
 			setButtonsVisible(OkButton)
 		else
 			local remainder = playerBalanceInt + productCost - PurchaseData.CurrencyAmount
-			descriptionText = descriptionText..". Would you like to buy "..formatNumber(productCost).." ROBUX?"
+			descriptionText = descriptionText .. ". Would you like to buy " .. formatNumber(productCost) .. " ROBUX?"
 			if FFlagUsePurchasePromptLocalization then
-				descriptionText = LocalizedGetString("PurchasePromptScript.setBuyMoreRobuxDialog.descriptionText",descriptionText)
-				descriptionText = string.gsub(descriptionText, "{RBX_NUMBER}", formatNumber(neededRobux))
-				descriptionText = string.gsub(descriptionText, "{RBX_NAME1}", productInfo["Name"])
-				descriptionText = string.gsub(descriptionText, "{RBX_NAME2}", ASSET_TO_STRING[productInfo["AssetTypeId"]])
+				descriptionText = LocalizedGetString("PurchasePromptScript.setBuyMoreRobuxDialog.descriptionText", descriptionText)
+				descriptionText = descriptionText:gsub("{RBX_NUMBER}", formatNumber(neededRobux))
+				descriptionText = descriptionText:gsub("{RBX_NAME1}", productInfo["Name"])
+				descriptionText = descriptionText:gsub("{RBX_NAME2}", ASSET_TO_STRING[productInfo["AssetTypeId"]])
 			end
 			
-			PostBalanceText.Text = "The remaining "..formatNumber(remainder).." ROBUX will be credited to your balance."
+			PostBalanceText.Text = "The remaining " .. formatNumber(remainder) .. " ROBUX will be credited to your balance."
 			if FFlagUsePurchasePromptLocalization then
-				PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.setBuyMoreRobuxDialog.PostBalanceText",PostBalanceText.Text)
-				PostBalanceText.Text = string.gsub(PostBalanceText.Text,"{RBX_NUMBER}",formatNumber(remainder))
+				local PBT = PostBalanceText.Text
+				PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.setBuyMoreRobuxDialog.PostBalanceText", PostBalanceText.Text)
+				PBT = PBT:gsub("{RBX_NUMBER}", formatNumber(remainder))
+			--	PostBalanceText.Text = string.gsub(PostBalanceText.Text,"{RBX_NUMBER}", formatNumber(remainder))
 			end
 			PostBalanceText.Visible = true
 		end
 	else
-		descriptionText = descriptionText..". Would you like to buy more ROBUX?"
+		descriptionText = descriptionText .. ". Would you like to buy more ROBUX?"
 		if FFlagUsePurchasePromptLocalization then
 			descriptionText = LocalizedGetString("PurchasePromptScript.setBuyMoreRobuxDialog.descriptionText", descriptionText)
-			descriptionText = string.gsub(descriptionText, "{RBX_NUMBER}", formatNumber(neededRobux))
-			descriptionText = string.gsub(descriptionText, "{RBX_NAME1}", productInfo["Name"])
-			descriptionText = string.gsub(descriptionText, "{RBX_NAME2}", ASSET_TO_STRING[productInfo["AssetTypeId"]])
+			descriptionText = descriptionText:gsub("{RBX_NUMBER}", formatNumber(neededRobux))
+			descriptionText = descriptionText:gsub("{RBX_NAME1}", productInfo["Name"])
+			descriptionText = descriptionText:gsub("{RBX_NAME2}", ASSET_TO_STRING[productInfo["AssetTypeId"]])
 		end
 	end
 	ItemDescriptionText.Text = descriptionText
@@ -848,9 +909,9 @@ local function showPurchasePrompt()
 	stopPurchaseAnimation()
 	PurchaseDialog.Visible = true
 	if isTenFootInterface then
-		UserInputService.OverrideMouseIconBehavior = Enum.OverrideMouseIconBehavior.ForceHide
+		UserInputService.OverrideMouseIconBehavior = OverrideMouseIconBehavior.ForceHide
 	end
-	PurchaseDialog:TweenPosition(isTenFootInterface and SHOW_POSITION_TENFOOT or SHOW_POSITION, Enum.EasingDirection.InOut, Enum.EasingStyle.Quad, TWEEN_TIME, true)
+	PurchaseDialog:TweenPosition(isTenFootInterface and SHOW_POSITION_TENFOOT or SHOW_POSITION, EasingDirection.InOut, EasingStyle.Quad, TWEEN_TIME, true)
 	disableControllerMovement()
 	enableControllerInput()
 end
@@ -864,15 +925,13 @@ local function onPurchaseFailed(failType)
 	local itemName = PurchaseData.ProductInfo and PurchaseData.ProductInfo["Name"] or ""
 	local failedText = ""
 	if FFlagUsePurchasePromptLocalization then
-		failedText = string.gsub(LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.FAILED",PURCHASE_MSG.FAILED), "{RBX_NAME1}", string.sub(itemName, 1, 20))
-		if itemName == "" then
-			failedText = string.gsub(failedText, " of ", "")
-		end
+		failedText = (LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.FAILED", PURCHASE_MSG.FAILED):gsub("{RBX_NAME1}", itemName:sub(1, 20)))
+		if itemName == "" then failtedText = failedText:gsub(" of ", "") end
 			
 		if failType == PURCHASE_FAILED.DEFAULT_ERROR then
-			failedText = string.gsub(failedText, "{RBX_NAME2}", LocalizedGetString("PurchasePromptScript.ERROR_MSG.UNKNOWN",ERROR_MSG.UNKNWON_FAILURE))
+			failedText = failedText:gsub("{RBX_NAME2}", LocalizedGetString("PurchasePromptScript.ERROR_MSG.UNKNOWN", ERROR_MSG.UNKNWON_FAILURE))
 		elseif failType == PURCHASE_FAILED.IN_GAME_PURCHASE_DISABLED then
-			failedText = string.gsub(failedText, "{RBX_NAME2}", LocalizedGetString("PurchasePromptScript.ERROR_MSG.PURCHASE_DISABLED",ERROR_MSG.PURCHASE_DISABLED))
+			failedText = failedText:gsub("{RBX_NAME2}", LocalizedGetString("PurchasePromptScript.ERROR_MSG.PURCHASE_DISABLED", ERROR_MSG.PURCHASE_DISABLED))
 		elseif failType == PURCHASE_FAILED.CANNOT_GET_BALANCE then
 			failedText = LocalizedGetString(
 				"PurchasePromptScript.PURCHASE_FAILED.CANNOT_GET_BALANCE",
@@ -901,7 +960,7 @@ local function onPurchaseFailed(failType)
 				"This limited item has no more copies. Try buying from another user on www.roblox.com. Your account has not been charged.") 
 			setPreviewImage(PurchaseData.ProductInfo, PurchaseData.AssetId)
 		elseif failType == PURCHASE_FAILED.DID_NOT_BUY_ROBUX then
-			failedText = string.gsub(failedText, "{RBX_NAME2}", LocalizedGetString("PurchasePromptScript.ERROR_MSG.INVALID_FUNDS",ERROR_MSG.INVALID_FUNDS))
+			failedText = failedText:gsub("{RBX_NAME2}", LocalizedGetString("PurchasePromptScript.ERROR_MSG.INVALID_FUNDS", ERROR_MSG.INVALID_FUNDS))
 		elseif failType == PURCHASE_FAILED.PROMPT_PURCHASE_ON_GUEST then
 			failedText = LocalizedGetString(
 				"PurchasePromptScript.PURCHASE_FAILED.PROMPT_PURCHASE_ON_GUEST",
@@ -914,16 +973,17 @@ local function onPurchaseFailed(failType)
 		end
 		
 	else --FFlagUsePurchasePromptLocalization == false
-		
-		failedText = string.gsub(PURCHASE_MSG.FAILED, "itemName", string.sub(itemName, 1, 20))
+		failedText = (PURCHASE_MSG.FAILED):gsub("itemName", itemName:sub(1, 20))
+	--	failedText = string.gsub(PURCHASE_MSG.FAILED, "itemName", string.sub(itemName, 1, 20))
 		if itemName == "" then
-			failedText = string.gsub(failedText, " of ", "")
+			failedText = failedText:gsub(" of ", "")
+		--	failedText = string.gsub(failedText, " of ", "")
 		end
 			
 		if failType == PURCHASE_FAILED.DEFAULT_ERROR then
-			failedText = string.gsub(failedText, "errorReason", ERROR_MSG.UNKNWON_FAILURE)
+			failedText = failedText:gsub("errorReason", ERROR_MSG.UNKNWON_FAILURE)
 		elseif failType == PURCHASE_FAILED.IN_GAME_PURCHASE_DISABLED then
-			failedText = string.gsub(failedText, "errorReason", ERROR_MSG.PURCHASE_DISABLED)
+			failedText = failedText:gsub("errorReason", ERROR_MSG.PURCHASE_DISABLED)
 		elseif failType == PURCHASE_FAILED.CANNOT_GET_BALANCE then
 			failedText = "Cannot retrieve your balance at this time. Your account has not been charged. Please try again later."
 		elseif failType == PURCHASE_FAILED.CANNOT_GET_ITEM_PRICE then
@@ -940,7 +1000,7 @@ local function onPurchaseFailed(failType)
 			failedText = "This limited item has no more copies. Try buying from another user on www.roblox.com. Your account has not been charged."
 			setPreviewImage(PurchaseData.ProductInfo, PurchaseData.AssetId)
 		elseif failType == PURCHASE_FAILED.DID_NOT_BUY_ROBUX then
-			failedText = string.gsub(failedText, "errorReason", ERROR_MSG.INVALID_FUNDS)
+			failedText = failedText:gsub("errorReason", ERROR_MSG.INVALID_FUNDS)
 		elseif failType == PURCHASE_FAILED.PROMPT_PURCHASE_ON_GUEST then
 			failedText = "You need to create a ROBLOX account to buy items, visit www.roblox.com for more info."
 		elseif failType == PURCHASE_FAILED.THIRD_PARTY_DISABLED then
@@ -960,14 +1020,14 @@ local function onPurchaseFailed(failType)
 end
 
 local function closePurchaseDialog()
-	PurchaseDialog:TweenPosition(isTenFootInterface and HIDE_POSITION_TENFOOT or HIDE_POSITION, Enum.EasingDirection.InOut, Enum.EasingStyle.Quad, TWEEN_TIME, true, function()
+	PurchaseDialog:TweenPosition(isTenFootInterface and HIDE_POSITION_TENFOOT or HIDE_POSITION, EasingDirection.InOut, EasingStyle.Quad, TWEEN_TIME, true, function()
 			PurchaseDialog.Visible = false
 			IsCurrentlyPrompting = false
 			IsCurrentlyPurchasing = false
 			IsCheckingPlayerFunds = false
 			purchaseState = PURCHASE_STATE.DEFAULT
 			if isTenFootInterface then
-				UserInputService.OverrideMouseIconBehavior = Enum.OverrideMouseIconBehavior.None
+				UserInputService.OverrideMouseIconBehavior = OverrideMouseIconBehavior.None
 			end
 		end)
 end
@@ -1025,8 +1085,8 @@ end
 local function isMarketplaceAvailable()
 	local success, result = pcall(function()
 		return HttpRbxApiService:GetAsync("my/economy-status",
-			Enum.ThrottlingPriority.Extreme,
-            Enum.HttpRequestType.MarketplaceService)
+			ThrottlingPriority.Extreme,
+            HttpRequestType.MarketplaceService)
 	end)
 	if not success then
 		print("PurchasePromptScript: isMarketplaceAvailable() failed because", result)
@@ -1045,11 +1105,11 @@ local function getProductInfo()
 	local success, result = nil, nil
 	if IsPurchasingConsumable then
 		success, result = pcall(function()
-			return MarketplaceService:GetProductInfo(PurchaseData.ProductId, Enum.InfoType.Product)
+			return MarketplaceService:GetProductInfo(PurchaseData.ProductId, InfoType.Product)
 		end)
 	elseif IsPurchasingGamePass then
 		success, result = pcall(function()
-			return MarketplaceService:GetProductInfo(PurchaseData.GamePassId, Enum.InfoType.GamePass)
+			return MarketplaceService:GetProductInfo(PurchaseData.GamePassId, InfoType.GamePass)
 		end)
 	else
 		success, result = pcall(function()
@@ -1076,7 +1136,8 @@ local function doesPlayerOwnGamePass()
 	
 	local success, result = pcall(function()
 		local gamePassService = game:GetService("GamePassService")
-		return gamePassService:PlayerHasPass(game.Players.LocalPlayer, PurchaseData.GamePassId)
+		return gamePassService:PlayerHasPass(Players.LocalPlayer, PurchaseData.GamePassId)
+	--	return gamePassService:PlayerHasPass(game.Players.LocalPlayer, PurchaseData.GamePassId)
 	end)
 	
 	if not success then
@@ -1132,12 +1193,12 @@ if useNewMarketplaceMethods() then
 	end
 else
 	getPlayerBalance = function()
-		local apiPath = platform == Enum.Platform.XBoxOne and 'my/platform-currency-budget' or 'currency/balance'
+		local apiPath = platform == Platform.XBoxOne and 'my/platform-currency-budget' or 'currency/balance'
 
 		local success, result = pcall(function()
 			return HttpRbxApiService:GetAsync(apiPath, 
-                Enum.ThrottlingPriority.Default, 
-                Enum.HttpRequestType.MarketplaceService)
+                ThrottlingPriority.Default, 
+                HttpRequestType.MarketplaceService)
 		end)
 
 		if not success then
@@ -1148,7 +1209,7 @@ else
 		if result == '' then return end
 
 		result = HttpService:JSONDecode(result)
-		if platform == Enum.Platform.XBoxOne then
+		if platform == Platform.XBoxOne then
 			result["robux"] = result["Robux"]
 			result["tickets"] = "0"
 		end
@@ -1163,9 +1224,9 @@ end
 
 local function playerHasFundsForPurchase(playerBalance)
 	local currencyTypeStr = nil
-	if PurchaseData.CurrencyType == Enum.CurrencyType.Robux then
+	if PurchaseData.CurrencyType == CurrencyType.Robux then
 		currencyTypeStr = "robux"
-	elseif PurchaseData.CurrencyType == Enum.CurrencyType.Tix then
+	elseif PurchaseData.CurrencyType == CurrencyType.Tix then
 		currencyTypeStr = "tickets"
 	else
 		return false
@@ -1178,24 +1239,24 @@ local function playerHasFundsForPurchase(playerBalance)
 
 	local afterBalanceAmount = playerBalanceInt - PurchaseData.CurrencyAmount
 	local currencyStr = getCurrencyString(PurchaseData.CurrencyType)
-	if afterBalanceAmount < 0 and PurchaseData.CurrencyType == Enum.CurrencyType.Robux then
+	if afterBalanceAmount < 0 and PurchaseData.CurrencyType == CurrencyType.Robux then
 		PostBalanceText.Visible = false
 		return true, false
-	elseif afterBalanceAmount < 0 and PurchaseData.CurrencyType == Enum.CurrencyType.Tix then
+	elseif afterBalanceAmount < 0 and PurchaseData.CurrencyType == CurrencyType.Tix then
 		PostBalanceText.Visible = true
-		PostBalanceText.Text = "You need "..formatNumber(-afterBalanceAmount).." more "..currencyStr.." to buy this item."
+		PostBalanceText.Text = "You need " .. formatNumber(-afterBalanceAmount) .. " more " .. currencyStr .. " to buy this item."
 		return true, false
 	end
 
-	if PurchaseData.CurrencyType == Enum.CurrencyType.Tix then
-		PostBalanceText.Text = PURCHASE_MSG.BALANCE_FUTURE..formatNumber(afterBalanceAmount).." "..currencyStr.."."
+	if PurchaseData.CurrencyType == CurrencyType.Tix then
+		PostBalanceText.Text = PURCHASE_MSG.BALANCE_FUTURE .. formatNumber(afterBalanceAmount) .. " " .. currencyStr .. "."
 	else
-		PostBalanceText.Text = PURCHASE_MSG.BALANCE_FUTURE..currencyStr..formatNumber(afterBalanceAmount).."."
+		PostBalanceText.Text = PURCHASE_MSG.BALANCE_FUTURE .. currencyStr .. formatNumber(afterBalanceAmount) .. "."
 	end
 	
 	if FFlagUsePurchasePromptLocalization then
-		PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.BALANCE_FUTURE",PostBalanceText.Text)
-		PostBalanceText.Text = string.gsub(PostBalanceText.Text, "{RBX_NUMBER}", currencyStr..formatNumber(afterBalanceAmount))
+		PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.BALANCE_FUTURE", PostBalanceText.Text)
+		PostBalanceText.Text = (PostBalanceText.Text):gsub("{RBX_NUMBER}", currencyStr .. formatNumber(afterBalanceAmount))
 	end
 	
 	if studioMockPurchasesEnabled() then
@@ -1289,7 +1350,7 @@ local function canPurchase(disableUpsell)
 		end
 		
 		-- most places will not need to sell third party assets.
-		if areThirdPartySalesRestricted() and not game:GetService("Workspace").AllowThirdPartySales then
+		if areThirdPartySalesRestricted() and not Workspace.AllowThirdPartySales then
 			local ProductCreator = tonumber(PurchaseData.ProductInfo["Creator"]["Id"])
 			local RobloxCreator = 1
 			if ProductCreator ~= game.CreatorId and ProductCreator ~= RobloxCreator then
@@ -1325,7 +1386,7 @@ local function canPurchase(disableUpsell)
 		success, hasFunds = playerHasFundsForPurchase(playerBalance)
 		if success then
 			if not hasFunds then
-				if PurchaseData.CurrencyType == Enum.CurrencyType.Tix then
+				if PurchaseData.CurrencyType == CurrencyType.Tix then
 					onPurchaseFailed(PURCHASE_FAILED.NOT_ENOUGH_TIX)
 					return false
 				elseif not disableUpsell then
@@ -1384,25 +1445,25 @@ local function onPurchaseSuccess()
 	local descriptionText = PURCHASE_MSG.SUCCEEDED
 	if FFlagUsePurchasePromptLocalization then
 		descriptionText = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.SUCCEEDED", descriptionText)
-		descriptionText = string.gsub(descriptionText, "{RBX_NAME1}", string.sub(PurchaseData.ProductInfo["Name"], 1, 20))
+		descriptionText = descriptionText:gsub("{RBX_NAME1}", (PurchaseData.ProductInfo["Name"]):sub(1, 20))
 	else
-		descriptionText = string.gsub(descriptionText, "itemName", string.sub(PurchaseData.ProductInfo["Name"], 1, 20))
+		descriptionText = descriptionText:gsub("itemName", (PurchaseData.ProductInfo["Name"]):sub(1, 20))
 	end
 	
 	ItemDescriptionText.Text = descriptionText
 
 	local playerBalance = getPlayerBalance()
-	local currencyType = PurchaseData.CurrencyType == Enum.CurrencyType.Tix and "tickets" or "robux"
+	local currencyType = PurchaseData.CurrencyType == CurrencyType.Tix and "tickets" or "robux"
 	local newBalance = playerBalance[currencyType]
 
 	if currencyType == "robux" then
-		PostBalanceText.Text = PURCHASE_MSG.BALANCE_NOW..getCurrencyString(PurchaseData.CurrencyType)..formatNumber(newBalance).."."	
+		PostBalanceText.Text = PURCHASE_MSG.BALANCE_NOW .. getCurrencyString(PurchaseData.CurrencyType) .. formatNumber(newBalance) .. "."	
 	else
-		PostBalanceText.Text = PURCHASE_MSG.BALANCE_NOW..formatNumber(newBalance).." "..getCurrencyString(PurchaseData.CurrencyType).."."
+		PostBalanceText.Text = PURCHASE_MSG.BALANCE_NOW .. formatNumber(newBalance) .. " " .. getCurrencyString(PurchaseData.CurrencyType) .. "."
 	end
 	if FFlagUsePurchasePromptLocalization then
-		PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.BALANCE_NOW",PostBalanceText.Text)
-		PostBalanceText.Text = string.gsub(PostBalanceText.Text, "{RBX_NUMBER}", getCurrencyString(PurchaseData.CurrencyType) .. formatNumber(newBalance))
+		PostBalanceText.Text = LocalizedGetString("PurchasePromptScript.PURCHASE_MSG.BALANCE_NOW", PostBalanceText.Text)
+		PostBalanceText.Text = (PostBalanceText.Text):gsub("{RBX_NUMBER}", getCurrencyString(PurchaseData.CurrencyType) .. formatNumber(newBalance))
 	end
 
 	if studioMockPurchasesEnabled() then
@@ -1432,35 +1493,36 @@ local function onAcceptPurchase()
 	local apiPath = nil
 	local params = nil
 	local currencyTypeInt = nil
-	if PurchaseData.CurrencyType == Enum.CurrencyType.Robux or PurchaseData.CurrencyType == Enum.CurrencyType.Default then
+	if PurchaseData.CurrencyType == CurrencyType.Robux or PurchaseData.CurrencyType == CurrencyType.Default then
 		currencyTypeInt = 1
-	elseif PurchaseData.CurrencyType == Enum.CurrencyType.Tix then
+	elseif PurchaseData.CurrencyType == CurrencyType.Tix then
 		currencyTypeInt = 2
 	end
 
 	local productId = PurchaseData.ProductInfo["ProductId"]
 	if IsPurchasingConsumable then
 		apiPath = "marketplace/submitpurchase"
-		params = "productId="..tostring(productId).."&currencyTypeId="..tostring(currencyTypeInt)..
-			"&expectedUnitPrice="..tostring(PurchaseData.CurrencyAmount).."&placeId="..tostring(game.PlaceId)
-		params = params.."&requestId="..HttpService:UrlEncode(HttpService:GenerateGUID(false))
+		params = "productId=" .. tostring(productId) .. "&currencyTypeId=" .. tostring(currencyTypeInt) ..
+			"&expectedUnitPrice=" .. tostring(PurchaseData.CurrencyAmount) .. "&placeId=" .. tostring(game.PlaceId)
+		params = params .. "&requestId=" .. HttpService:UrlEncode(HttpService:GenerateGUID(false))
 	else
 		apiPath = "marketplace/purchase"
-		params = "productId="..tostring(productId).."&currencyTypeId="..tostring(currencyTypeInt)..
-			"&purchasePrice="..tostring(PurchaseData.CurrencyAmount or 0).."&locationType=Game&locationId="..tostring(game.PlaceId)
+		params = "productId=" .. tostring(productId) .. "&currencyTypeId=" .. tostring(currencyTypeInt) ..
+			"&purchasePrice=" .. tostring(PurchaseData.CurrencyAmount or 0) .. "&locationType=Game&locationId=" .. tostring(game.PlaceId)
 	end
 
 	local submitPurchase
 	if useNewMarketplaceMethods() then
 		local requestId = HttpService:GenerateGUID(false)
 		submitPurchase = function()
-			return game:GetService("MarketplaceService"):PerformPurchase(IsPurchasingConsumable and Enum.InfoType.Product or Enum.InfoType.Asset, productId, PurchaseData.CurrencyAmount or 0, requestId)
+			return MarketplaceService:PerformPurchase(IsPurchasingConsumable and InfoType.Product or InfoType.Asset, productId, PurchaseData.CurrencyAmount or 0, requestId)
+		--	return game:GetService("MarketplaceService"):PerformPurchase(IsPurchasingConsumable and InfoType.Product or InfoType.Asset, productId, PurchaseData.CurrencyAmount or 0, requestId)
 		end
 	else
 		submitPurchase = function()
 			return HttpRbxApiService:PostAsync(apiPath, params, 
-                Enum.ThrottlingPriority.Default, Enum.HttpContentType.ApplicationUrlEncoded,
-                Enum.HttpRequestType.MarketplaceService)
+                ThrottlingPriority.Default, HttpContentType.ApplicationUrlEncoded,
+                HttpRequestType.MarketplaceService)
 		end
 	end
 
@@ -1477,7 +1539,7 @@ local function onAcceptPurchase()
 		end
 		--
 		game:ReportInGoogleAnalytics("Developer Product", "Purchase",
-			wasSuccess and ("success. Retries = "..(3 - retries)) or ("failure: " .. tostring(result)), 1)
+			wasSuccess and ("success. Retries = " .. (3 - retries)) or ("failure: " .. tostring(result)), 1)
 	end
 
 	if tick() - startTime < 1 then wait(1) end 		-- artifical delay to show spinner for at least 1 second
@@ -1530,7 +1592,7 @@ local function onAcceptPurchase()
 		MarketplaceService:ReportAssetSale(PurchaseData.GamePassId, PurchaseData.CurrencyAmount)
 	else
 		onPurchaseSuccess()
-		if PurchaseData.CurrencyType == Enum.CurrencyType.Robux then
+		if PurchaseData.CurrencyType == CurrencyType.Robux then
 			MarketplaceService:ReportAssetSale(PurchaseData.AssetId, PurchaseData.CurrencyAmount)
 		end
 	end
@@ -1601,10 +1663,10 @@ local function onBuyRobuxPrompt()
 
 	startPurchaseAnimation()
 	if IsNativePurchasing then
-		if platform == Enum.Platform.XBoxOne then
+		if platform == Platform.XBoxOne then
 			spawn(function()
 				local PlatformService = nil
-				pcall(function() PlatformService = Game:GetService('PlatformService') end)
+				pcall(function() PlatformService = game:GetService('PlatformService') end)
 				if PlatformService then
 					local platformPurchaseReturnInt = -1
 					local purchaseCallSuccess, purchaseErrorMsg = pcall(function()
@@ -1622,7 +1684,7 @@ local function onBuyRobuxPrompt()
 		end
 	else
 		IsCheckingPlayerFunds = true
-		GuiService:OpenBrowserWindow(BASE_URL.."Upgrades/Robux.aspx")
+		GuiService:OpenBrowserWindow(BASE_URL .. "Upgrades/Robux.aspx")
 	end
 	MarketplaceService:ReportRobuxUpsellStarted()
 end
@@ -1633,17 +1695,15 @@ local function onUpgradeBCPrompt()
 	end
 
 	IsCheckingPlayerFunds = true
-	GuiService:OpenBrowserWindow(BASE_URL.."Upgrades/BuildersClubMemberships.aspx")
+	GuiService:OpenBrowserWindow(BASE_URL .. "Upgrades/BuildersClubMemberships.aspx")
 end
 
 function enableControllerInput()
-	local cas = game:GetService("ContextActionService")
-
 	--accept the purchase when the user presses the a button
-	cas:BindCoreAction(
+	ContextActionService:BindCoreAction(
 		CONTROLLER_CONFIRM_ACTION_NAME,
 		function(actionName, inputState, inputObject)
-			if inputState ~= Enum.UserInputState.Begin then return end
+			if inputState ~= UserInputState.Begin then return end
 			
 			if purchaseState == PURCHASE_STATE.SUCCEEDED then
 				onPromptEnded()
@@ -1658,28 +1718,27 @@ function enableControllerInput()
 			end
 		end,
 		false,
-		Enum.KeyCode.ButtonA
+		KeyCode.ButtonA
 	)
 
 	--cancel the purchase when the user presses the b button
-	cas:BindCoreAction(
+	ContextActionService:BindCoreAction(
 		CONTROLLER_CANCEL_ACTION_NAME,
 		function(actionName, inputState, inputObject)
-			if inputState ~= Enum.UserInputState.Begin then return end
+			if inputState ~= UserInputState.Begin then return end
 
 			if (OkPurchasedButton.Visible or OkButton.Visible or CancelButton.Visible) and (not PurchaseFrame.Visible) then
 				onPromptEnded(false)
 			end
 		end,
 		false,
-		Enum.KeyCode.ButtonB
+		KeyCode.ButtonB
 	)
 end
 
 function disableControllerInput()
-	local cas = game:GetService("ContextActionService")
-	cas:UnbindCoreAction(CONTROLLER_CONFIRM_ACTION_NAME)
-	cas:UnbindCoreAction(CONTROLLER_CANCEL_ACTION_NAME)
+	ContextActionService:UnbindCoreAction(CONTROLLER_CONFIRM_ACTION_NAME)
+	ContextActionService:UnbindCoreAction(CONTROLLER_CANCEL_ACTION_NAME)
 end
 
 function showGamepadButtons()
@@ -1705,10 +1764,10 @@ end
 
 function onInputChanged(inputObject)
 	local input = inputObject.UserInputType
-	local inputs = Enum.UserInputType
-	if valueInTable(input, {inputs.Gamepad1, inputs.Gamepad2, inputs.Gamepad3, inputs.Gamepad4}) then
-		if inputObject.KeyCode == Enum.KeyCode.Thumbstick1 or inputObject.KeyCode == Enum.KeyCode.Thumbstick2 then
-			if math.abs(inputObject.Position.X) > 0.1 or math.abs(inputObject.Position.Z) > 0.1 or math.abs(inputObject.Position.Y) > 0.1 then
+	local inputs = UserInputType
+	if valueInTable(input, { inputs.Gamepad1, inputs.Gamepad2, inputs.Gamepad3, inputs.Gamepad4 }) then
+		if inputObject.KeyCode == KeyCode.Thumbstick1 or inputObject.KeyCode == KeyCode.Thumbstick2 then
+			if abs(inputObject.Position.X) > 0.1 or abs(inputObject.Position.Z) > 0.1 or abs(inputObject.Position.Y) > 0.1 then
 				showGamepadButtons()
 			end
 		else
@@ -1718,40 +1777,40 @@ function onInputChanged(inputObject)
 		hideGamepadButtons()
 	end
 end
-UserInputService.InputChanged:connect(onInputChanged)
-UserInputService.InputBegan:connect(onInputChanged)
+UserInputService.InputChanged:Connect(onInputChanged)
+UserInputService.InputBegan:Connect(onInputChanged)
 hideGamepadButtons()
 
 --[[ Event Connections ]]--
-CancelButton.MouseButton1Click:connect(function()
+CancelButton.MouseButton1Click:Connect(function()
 	if IsCurrentlyPurchasing then return end
 	onPromptEnded(false)
 end)
-BuyButton.MouseButton1Click:connect(onAcceptPurchase)
-FreeButton.MouseButton1Click:connect(onAcceptPurchase)
-OkButton.MouseButton1Click:connect(function()
+BuyButton.MouseButton1Click:Connect(onAcceptPurchase)
+FreeButton.MouseButton1Click:Connect(onAcceptPurchase)
+OkButton.MouseButton1Click:Connect(function()
 	if purchaseState == PURCHASE_STATE.FAILED then
 		onPromptEnded(false)
 	end
 end)
-OkPurchasedButton.MouseButton1Click:connect(function()
+OkPurchasedButton.MouseButton1Click:Connect(function()
 	if purchaseState == PURCHASE_STATE.SUCCEEDED then
 		onPromptEnded(true)
 	end
 end)
-BuyRobuxButton.MouseButton1Click:connect(onBuyRobuxPrompt)
-BuyBCButton.MouseButton1Click:connect(onUpgradeBCPrompt)
+BuyRobuxButton.MouseButton1Click:Connect(onBuyRobuxPrompt)
+BuyBCButton.MouseButton1Click:Connect(onUpgradeBCPrompt)
 
-MarketplaceService.PromptProductPurchaseRequested:connect(function(player, productId, equipIfPurchased, currencyType)
+MarketplaceService.PromptProductPurchaseRequested:Connect(function(player, productId, equipIfPurchased, currencyType)
 	onPurchasePrompt(player, nil, equipIfPurchased, currencyType, productId)
 end)
-MarketplaceService.PromptPurchaseRequested:connect(function(player, assetId, equipIfPurchased, currencyType)
+MarketplaceService.PromptPurchaseRequested:Connect(function(player, assetId, equipIfPurchased, currencyType)
 	onPurchasePrompt(player, assetId, equipIfPurchased, currencyType, nil)
 end)
-MarketplaceService.PromptGamePassPurchaseRequested:connect(function(player, gamePassId)
-	onPurchasePrompt(player, nil, false, Enum.CurrencyType.Default, nil, gamePassId)
+MarketplaceService.PromptGamePassPurchaseRequested:Connect(function(player, gamePassId)
+	onPurchasePrompt(player, nil, false, CurrencyType.Default, nil, gamePassId)
 end)
-MarketplaceService.ServerPurchaseVerification:connect(function(serverResponseTable)
+MarketplaceService.ServerPurchaseVerification:Connect(function(serverResponseTable)
 	if not serverResponseTable then
 		onPurchaseFailed(PURCHASE_FAILED.DEFAULT_ERROR)
 		return
@@ -1763,7 +1822,7 @@ MarketplaceService.ServerPurchaseVerification:connect(function(serverResponseTab
 end)
 
 
-GuiService.BrowserWindowClosed:connect(function()
+GuiService.BrowserWindowClosed:Connect(function()
 	if IsCheckingPlayerFunds then
 		retryPurchase(4)
 	end
@@ -1773,7 +1832,7 @@ GuiService.BrowserWindowClosed:connect(function()
 end)
 
 if IsNativePurchasing then
-	MarketplaceService.NativePurchaseFinished:connect(function(player, productId, wasPurchased)
+	MarketplaceService.NativePurchaseFinished:Connect(function(player, productId, wasPurchased)
 		nativePurchaseFinished(wasPurchased)
 	end)
 end

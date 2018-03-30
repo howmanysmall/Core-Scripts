@@ -71,7 +71,7 @@ local SelectedCharacterIndicator = require(AvatarMenuModules:WaitForChild("Selec
 
 local LocalPlayer = PlayersService.LocalPlayer
 while not LocalPlayer do
-	PlayersService.PlayerAdded:wait()
+	PlayersService.PlayerAdded:Wait()
 	LocalPlayer = PlayersService.LocalPlayer
 end
 
@@ -118,13 +118,13 @@ function OpenMenu()
 	ContextMenuFrame.Content.ContextActionList.CanvasPosition = Vector2.new(0,0)
 	ContextMenuFrame.Position = UDim2.new(0.5, 0, 1, ContextMenuFrame.AbsoluteSize.Y)
 
-	contextMenuPlayerChangedConn = ContextMenuGui.SelectedPlayerChanged:connect(function()
+	contextMenuPlayerChangedConn = ContextMenuGui.SelectedPlayerChanged:Connect(function()
 		SetSelectedPlayer(ContextMenuGui:GetSelectedPlayer())
 	end)
 
 	local positionTween = TweenService:Create(ContextMenuFrame, OPEN_MENU_TWEEN, {Position = UDim2.new(0.5, 0, 1 - ContextMenuGui:GetBottomScreenPaddingConstant(), 0)})
 	positionTween:Play()
-	positionTween.Completed:wait()
+	positionTween.Completed:Wait()
 
 	ContextMenuOpening = false
 end
@@ -149,8 +149,8 @@ function BuildPlayerCarousel(selectedPlayer, worldPoint)
 			if players[i] ~= LocalPlayer then
 				local playerPosition = ContextMenuUtil:GetPlayerPosition(players[i])
 				if playerPosition then
-					local distanceFromClicked = (worldPoint - playerPosition).magnitude
-					table.insert(playersByProximity, {players[i], distanceFromClicked})
+					local distanceFromClicked = (worldPoint - playerPosition).Magnitude
+					playersByProximity[#playersByProximity + 1] = {players[i], distanceFromClicked}
 				end
 			end
 		end
@@ -181,12 +181,12 @@ function CloseContextMenu()
 	GuiService.SelectedCoreObject = nil
 	ContextMenuUtil:EnablePlayerMovement()
 	if contextMenuPlayerChangedConn then
-		contextMenuPlayerChangedConn:disconnect()
+		contextMenuPlayerChangedConn:Disconnect()
 	end
 
 	local positionTween = TweenService:Create(ContextMenuFrame, CLOSE_MENU_TWEEN, {Position = UDim2.new(0.5, 0, 1, ContextMenuFrame.AbsoluteSize.Y)})
 	positionTween:Play()
-	positionTween.Completed:wait()
+	positionTween.Completed:Wait()
 
 	ContextMenuFrame.Visible = false
 	SetSelectedPlayer(nil)
@@ -250,7 +250,7 @@ function OnUserInput(screenPoint, inputObject)
 		lastInputObject = inputObject
 		initialScreenPoint = screenPoint
 	elseif lastInputObject == inputObject and inputObject.UserInputState == Enum.UserInputState.Change then
-		if (screenPoint - initialScreenPoint).magnitude > 5 then
+		if (screenPoint - initialScreenPoint).Magnitude > 5 then
 			lastInputObject = nil
 			initialScreenPoint = nil
 		end
@@ -262,7 +262,7 @@ function OnUserInput(screenPoint, inputObject)
 end
 
 function OnMouseMoved(screenPoint)
-	if not ContextMenuOpen and lastInputObject and (screenPoint - initialScreenPoint).magnitude > MAX_MOVEMENT_THRESHOLD then
+	if not ContextMenuOpen and lastInputObject and (screenPoint - initialScreenPoint).Magnitude > MAX_MOVEMENT_THRESHOLD then
 		lastInputObject = nil
 		initialScreenPoint = nil
 	end
@@ -284,14 +284,11 @@ end
 
 local function functionProcessInput(inputObject, gameProcessedEvent)
 	trackTouchSwipeInput(inputObject)
-
 	if gameProcessedEvent then return end
-	
-	if inputObject.UserInputType == Enum.UserInputType.MouseButton1 or 
-		inputObject.UserInputType == Enum.UserInputType.Touch then
-			OnUserInput(Vector2.new(inputObject.Position.X, inputObject.Position.Y), inputObject)
+	if inputObject.UserInputType == Enum.UserInputType.MouseButton1 or inputObject.UserInputType == Enum.UserInputType.Touch then
+		OnUserInput(Vector2.new(inputObject.Position.X, inputObject.Position.Y), inputObject)
 	elseif inputObject.UserInputType == Enum.UserInputType.MouseMovement then
-			OnMouseMoved(Vector2.new(inputObject.Position.X, inputObject.Position.Y))
+		OnMouseMoved(Vector2.new(inputObject.Position.X, inputObject.Position.Y))
 	end
 end
 
